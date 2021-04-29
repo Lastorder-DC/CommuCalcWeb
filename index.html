@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>메인 화면 | 커뮤 전투 계산기(v0.1.3)</title>
+
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tabulator-tables@4.9.3/dist/css/tabulator.min.css" integrity="sha256-iNDcYlLz2jVeyDwdhixvolAp8Al9Q5qKFNhoQVQVMrc=" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tabulator-tables@4.9.3/dist/css/tabulator_modern.min.css" integrity="sha256-LDtQnAZad84TNn6lp+eH9FvNrkm6ZZjL6lxVj3YbHl8=" crossorigin="anonymous">
+    
+    <!-- JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tabulator-tables@4.9.3/dist/js/tabulator.min.js" integrity="sha256-U8JBtROrrZa38AhLw1h4P5vaLAXXNEPdA+9Mp/K35vA=" crossorigin="anonymous"></script>
+
+    <!-- Favicons -->
+    <link rel="icon" href="/favicon.ico">
+    <meta name="theme-color" content="#7952b3">
+
+
+    <style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+      /* Show it is fixed to the top */
+      body {
+        padding-top: 4.5rem;
+      }
+      #charDB {
+        padding: 0;
+      }
+      .tabulator-cell {
+        text-align: center;
+      }
+      div[tabulator-field="name"] {
+        text-align: left;
+      }
+      #calcbtn {
+        margin-top:32px;
+        width:100%;
+      }
+      .row {
+        padding-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/">커뮤 전투 계산기</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+          <ul class="navbar-nav me-auto mb-2 mb-md-0">
+            <li class="nav-item">
+              <a class="nav-link" href="calc.html">계산하기</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="db.html">캐릭터 입력</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">로그인</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container">
+        <div class="row">
+            <h2>커뮤 전투 계산기(v0.1.3)</h2>
+            <div class="col-md-2">
+                <button id="calcbtn" type="button" class="btn btn-primary" onclick="location.href='calc.html'">계산하기</button>
+            </div>
+            <div class="col-md-2">
+                <button id="calcbtn" type="button" class="btn btn-secondary" onclick="location.href='db.html'">캐릭터 입력</button>
+            </div>
+        </div>
+    </main>
+  </body>
+</html>
