@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>전투 계산 | 커뮤 전투 계산기(v0.1.3)</title>
+
+    <!-- CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tabulator-tables@4.9.3/dist/css/tabulator.min.css" integrity="sha256-iNDcYlLz2jVeyDwdhixvolAp8Al9Q5qKFNhoQVQVMrc=" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/tabulator-tables@4.9.3/dist/css/tabulator_modern.min.css" integrity="sha256-LDtQnAZad84TNn6lp+eH9FvNrkm6ZZjL6lxVj3YbHl8=" crossorigin="anonymous">
+    
+    <!-- JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js" integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tabulator-tables@4.9.3/dist/js/tabulator.min.js" integrity="sha256-U8JBtROrrZa38AhLw1h4P5vaLAXXNEPdA+9Mp/K35vA=" crossorigin="anonymous"></script>
+
+    <!-- Favicons -->
+    <link rel="icon" href="/favicon.ico">
+    <meta name="theme-color" content="#7952b3">
+
+
+    <style>
+      .bd-placeholder-img {
+        font-size: 1.125rem;
+        text-anchor: middle;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        user-select: none;
+      }
+
+      @media (min-width: 768px) {
+        .bd-placeholder-img-lg {
+          font-size: 3.5rem;
+        }
+      }
+      /* Show it is fixed to the top */
+      body {
+        padding-top: 4.5rem;
+      }
+      #charDB {
+        padding: 0;
+      }
+      .tabulator-cell {
+        text-align: center;
+      }
+      div[tabulator-field="name"] {
+        text-align: left;
+      }
+      #calcbtn {
+        margin-top:32px;
+        width:100%;
+      }
+      .row {
+        padding-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="/">커뮤 전투 계산기</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarCollapse">
+          <ul class="navbar-nav me-auto mb-2 mb-md-0">
+            <li class="nav-item">
+              <a class="nav-link active" aria-current="page" href="calc.html">계산하기</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="db.html">캐릭터 입력</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link disabled" href="#" tabindex="-1" aria-disabled="true">로그인</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <main class="container">
+        <div class="row">
+            <h2>전투 시뮬레이션</h2>
+            <div class="col-md-2">
+                <label for="enemyname" class="form-label">적 이름</label>
+                <input id="enemyname" type="text" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label for="enemyhp" class="form-label">적 체력</label>
+                <input id="enemyhp" type="number" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label for="enemyatk" class="form-label">적 공격력</label>
+                <input id="enemyatk" type="number" class="form-control">
+            </div>
+            <div class="col-md-2">
+                <label for="charname" class="form-label">캐릭터 이름</label>
+                <select id="charname" class="form-select">
+                    <option value="loading" selected>불러오는중...</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="atkdef" class="form-label">공격/방어</label>
+                <select id="atkdef" class="form-select">
+                    <option value="atk" selected>공격</option>
+                    <option value="def">방어</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button id="calcbtn" type="button" class="btn btn-primary" onclick="doCalc()">계산</button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-3">
+                <label for="curhp" class="form-label">현재 캐릭터 체력</label>
+                <input id="curhp" type="text" class="form-control" readonly>
+            </div>
+            <div class="col-md-3">
+                <label for="curenemyhp" class="form-label">현재 적 체력</label>
+                <input id="curenemyhp" type="number" class="form-control">
+            </div>
+            <div class="col-md-3">
+                <label for="debuff" class="form-label">디버프</label>
+                <input id="debuff" type="text" class="form-control" readonly>
+            </div>
+            <div class="col-md-3">
+                <label for="success" class="form-label">공격 성공 여부</label>
+                <select id="success" class="form-select" disabled>
+                    <option value="ok" selected>성공</option>
+                    <option value="failed">실패</option>
+                </select>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <label for="atksuccess" class="form-label">전투 결과</label>
+                <textarea class="form-control" id="result" readonly rows="5"></textarea>
+            </div>
+        </div>
+    </main>
+    
+    <script>
+    // 적, 캐릭터 다이스
+    let enemyDice = 0;
+    let charDice = 0;
+    
+    // 공격 성공/실패, 방어 성공/실패시 메세지
+    const atksuccess = localStorage.getItem('atksuccess') || "";
+    const atkfailed = localStorage.getItem('atkfailed') || "";
+    const defsuccess = localStorage.getItem('defsuccess') || "";
+    const deffailed = localStorage.getItem('deffailed') || "";
+    
+    const curhp = document.getElementById('curhp');
+    const curenemyhp = document.getElementById('curenemyhp');
+    const debuff = document.getElementById('debuff');
+    const success = document.getElementById('success');
+    const result = document.getElementById('result');
+    
+    // 적 이름 저장처리
+    const enemyname = document.getElementById('enemyname');
+    enemyname.addEventListener('input', () => {
+        localStorage.setItem('enemyname', enemyname.value);
+    });
+    enemyname.value = localStorage.getItem('enemyname') || "";
+    
+    // 적 체력 저장처리
+    const enemyhp = document.getElementById('enemyhp');
+    enemyhp.addEventListener('input', () => {
+        localStorage.setItem('enemyhp', enemyhp.value);
+    });
+    enemyhp.value = parseInt(localStorage.getItem('enemyhp')) || 10;
+    
+    // 적 공격력 저장처리
+    const enemyatk = document.getElementById('enemyatk');
+    enemyatk.addEventListener('input', () => {
+        localStorage.setItem('enemyatk', enemyatk.value);
+    });
+    enemyatk.value = parseInt(localStorage.getItem('enemyatk')) || 2;
+    
+    // 공/방 저장처리
+    const atkdef = document.getElementById('atkdef');
+    atkdef.addEventListener('change', () => {
+        localStorage.setItem('atkdef', atkdef.value);
+    });
+    atkdef.value = localStorage.getItem('atkdef') || "atk";
+    
+    // 캐릭터 DB 불러옴
+    var tabledata = localStorage.getItem('charlist');
+    if(tabledata == null) {
+        location.href="/db.html";
+    } else {
+        tabledata = JSON.parse(tabledata);
+    }
+    
+    // 캐릭터 이름 불러옴
+    const charname = document.getElementById('charname');
+    let idx = 0;
+    for (let char of tabledata) {
+        var charopt = new Option(char.name, char.num);
+        charname.options[idx] = charopt;
+        idx++;
+    }
+    
+    // 캐릭터 이름 변경처리
+    charname.addEventListener('change', () => {
+        // 불러오는중이 아닐때 저장한다
+        if(charname.value != "loading") localStorage.setItem('charname', charname.value);
+        curhp.value = tabledata[parseInt(charname.value) - 1].hp;
+        debuff.value = parseInt(tabledata[parseInt(charname.value) - 1].debuff);
+    });
+    if(localStorage.getItem('charname') != null) {
+        charname.value = localStorage.getItem('charname');
+        curhp.value = tabledata[parseInt(charname.value) - 1].hp;
+        debuff.value = parseInt(tabledata[parseInt(charname.value) - 1].debuff);
+    }
+    
+    // 다이스 계산용 함수
+    function dice(max) {
+        return Math.floor(Math.random() * max) + 1; //최댓값도 포함, 최솟값도 포함
+    }
+    
+    function updateStorage() {
+        localStorage.setItem('charlist', JSON.stringify(tabledata));
+    }
+    
+    function replaceValue(message, ename, cname, edice, cdice, ehp, chp, damage, debuff) {
+        message = message.replace(/%적이름%/g, ename);
+        message = message.replace(/%캐이름%/g, cname);
+        message = message.replace(/%적다이스%/g, edice);
+        message = message.replace(/%적체력%/g, ehp);
+        message = message.replace(/%캐체력%/g, chp);
+        message = message.replace(/%데미지%/g, damage);
+        
+        if(parseInt(debuff) == 0) {
+            message = message.replace(/%캐다이스%/g, cdice);
+        } else {
+            message = message.replace(/%캐다이스%/g, cdice + "(디버프 " + debuff + ")");
+        }
+        
+        return message;
+    }
+    
+    // 계산용 함수
+    function doCalc() {
+        let resultStr = "";
+        let curChar = null;
+        let damage = 0;
+        
+        // 현재 캐릭터를 찾음
+        curChar = tabledata[parseInt(charname.value) - 1];
+        
+        if(curChar.hp == 0) return alert("사망한 캐릭터는 행동할 수 없습니다!");
+        
+        // 적, 캐릭터 다이스 계산
+        enemyDice = dice(6);
+        charDice = dice(6);
+        
+        // 존재하지 않는 캐릭터일시 경고
+        if(!curChar) return alert("존재하지 않는 캐릭터입니다!");
+        
+        // 적 현재 체력이 비어 있다면 초기화
+        if(curenemyhp.value == "") curenemyhp.value = enemyhp.value;
+        
+        // 공격 모드
+        if(atkdef.value == "atk") {
+            // 공격 성공(캐릭터 다이스가 적 다이스보다 같거나 큼)
+            if((charDice + parseInt(curChar.debuff)) >= enemyDice) {
+                // 데미지 계산(공격력+무기데미지)
+                damage = curChar.atk + curChar.atkb;
+                if(parseInt(curenemyhp.value) - damage <= 0) {
+                    alert("적이 쓰러졌습니다!");
+                    curenemyhp.value = enemyhp.value;
+                    resultStr = replaceValue(atksuccess, enemyname.value, curChar.name, enemyDice, charDice, 0, curChar.hp, damage, curChar.debuff);
+                } else {
+                    curenemyhp.value = parseInt(curenemyhp.value) - damage;
+                    resultStr = replaceValue(atksuccess, enemyname.value, curChar.name, enemyDice, charDice, curenemyhp.value, curChar.hp, damage, curChar.debuff);
+                }
+            } else {
+                // 데미지 = 적다이스 * 적공격력 - 캐 방어력 - 캐 방어구
+                damage = (enemyDice * parseInt(enemyatk.value)) - curChar.def - curChar.defb;
+                if(damage < 0) damage = 0;
+                
+                // 데미지 처리
+                curChar.hp = curChar.hp - damage;
+                
+                // 체력이 0보다 작으면 0으로 설정
+                if(curChar.hp < 0) curChar.hp = 0;
+                
+                // 데이터 업데이트
+                curhp.value = curChar.hp;
+                tabledata[parseInt(charname.value) - 1].hp = curChar.hp;
+                
+                // 결과 문자열 업데이트
+                resultStr = replaceValue(atkfailed, enemyname.value, curChar.name, enemyDice, charDice, curenemyhp.value, curChar.hp, damage, curChar.debuff);
+            }
+        } else {
+            if((charDice + parseInt(curChar.debuff)) >= enemyDice) {
+                // 방어 성공시 메세지만 출력
+                resultStr = replaceValue(defsuccess, enemyname.value, curChar.name, enemyDice, charDice, curenemyhp.value, curChar.hp, 0, curChar.debuff);
+            } else {
+                // 방어 실패시 공격 실패 처리(같은 코드)
+                // 데미지 = 적다이스 * 적공격력 - 캐 방어력 - 캐 방어구
+                damage = (enemyDice * parseInt(enemyatk.value)) - curChar.def - curChar.defb;
+                if(damage < 0) damage = 0;
+                
+                // 데미지 처리
+                curChar.hp = curChar.hp - damage;
+                
+                // 체력이 0보다 작으면 0으로 설정
+                if(curChar.hp < 0) curChar.hp = 0;
+                
+                // 데이터 업데이트
+                curhp.value = curChar.hp;
+                tabledata[parseInt(charname.value) - 1].hp = curChar.hp;
+                
+                // 결과 문자열 업데이트
+                resultStr = replaceValue(deffailed, enemyname.value, curChar.name, enemyDice, charDice, curenemyhp.value, curChar.hp, damage, curChar.debuff);
+            }
+        }
+        
+        result.innerHTML = resultStr;
+        updateStorage();
+    }
+    </script>
+  </body>
+</html>
