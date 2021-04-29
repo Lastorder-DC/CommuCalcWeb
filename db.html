@@ -179,12 +179,13 @@
         data:tabledata,           //load row data from array
         locale:true, //auto detect the current language.
         layout:"fitColumns",      //fit columns to width of table
-        responsiveLayout:"hide",  //hide columns that dont fit on the table
+        responsiveLayout:"collapse",  //hide columns that dont fit on the table
         tooltips:true,            //show tool tips on cells
         history:true,             //allow undo and redo actions on the table
         pagination:"local",       //paginate the data
         paginationSize:7,         //allow 7 rows per page of data
         movableColumns:false,     //allow column order to be changed
+        resizableColumns:false,
         resizableRows:false,       //allow row order to be changed
         movableRows: false,        //enable user movable rows
         footerElement:"<button class=\"tabulator-page\" onclick='addChar()'>새 캐릭터</button><button class=\"tabulator-page\" onclick='emptyData()'>데이터 비우기</button>", //add a custom button to the footer element
