@@ -267,7 +267,7 @@
             if((charDice + parseInt(curChar.debuff)) >= enemyDice) {
                 success.value = "ok";
                 // 데미지 계산(공격력+무기데미지)
-                damage = curChar.atk + curChar.atkb;
+                damage = parseInt(curChar.atk) + parseInt(curChar.atkb);
                 if(parseInt(curenemyhp.value) - damage <= 0) {
                     alert("적이 쓰러졌습니다!");
                     curenemyhp.value = enemyhp.value;
@@ -279,11 +279,11 @@
             } else {
                 success.value = "failed";
                 // 데미지 = 적다이스 * 적공격력 - 캐 방어력 - 캐 방어구
-                damage = (enemyDice * parseInt(enemyatk.value)) - curChar.def - curChar.defb;
+                damage = (enemyDice * parseInt(enemyatk.value)) - parseInt(curChar.def) - parseInt(curChar.defb);
                 if(damage < 0) damage = 0;
                 
                 // 데미지 처리
-                curChar.hp = curChar.hp - damage;
+                curChar.hp = parseInt(curChar.hp) - damage;
                 
                 // 체력이 0보다 작으면 0으로 설정
                 if(curChar.hp < 0) curChar.hp = 0;
@@ -304,11 +304,11 @@
                 success.value = "failed";
                 // 방어 실패시 공격 실패 처리(같은 코드)
                 // 데미지 = 적다이스 * 적공격력 - 캐 방어력 - 캐 방어구
-                damage = (enemyDice * parseInt(enemyatk.value)) - curChar.def - curChar.defb;
+                damage = (enemyDice * parseInt(enemyatk.value)) - parseInt(curChar.def) - parseInt(curChar.defb);
                 if(damage < 0) damage = 0;
                 
                 // 데미지 처리
-                curChar.hp = curChar.hp - damage;
+                curChar.hp = parseInt(curChar.hp) - damage;
                 
                 // 체력이 0보다 작으면 0으로 설정
                 if(curChar.hp < 0) curChar.hp = 0;
