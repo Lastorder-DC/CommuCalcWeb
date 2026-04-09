@@ -64,7 +64,7 @@ export default function GuidePage() {
 (적 체력이 0 이하면 적 쓰러짐)`}
             </pre>
 
-            <h5 className="text-danger mt-3">공격 실패 시</h5>
+            <h5 className="text-danger mt-3">공격 실패 시 (PvE)</h5>
             <p>적이 반격합니다. 적 다이스 × 적 공격력에서 캐릭터의 방어력과 방어구를 뺀 만큼 피해를 받습니다.</p>
             <pre className="bg-light p-2 rounded">
 {`데미지 = (적 다이스 × 적 공격력) - 방어력 - 방어구
@@ -73,9 +73,21 @@ export default function GuidePage() {
 (캐릭터 체력이 0 이하면 0으로 고정)`}
             </pre>
 
+            <h5 className="text-danger mt-3">공격 실패 시 (PvP)</h5>
+            <p>PvP에서는 다이스와 공격력을 곱하지 않고, 합산하여 데미지를 계산합니다.</p>
+            <pre className="bg-light p-2 rounded">
+{`데미지 = (적 공격력 + 적 다이스) - 방어력 - 방어구
+(데미지가 0 미만이면 0으로 처리)
+캐릭터 체력 = 캐릭터 체력 - 데미지`}
+            </pre>
+
             <div className="alert alert-warning">
-              <strong>예시:</strong> 적 다이스 5, 적 공격력 2, 캐릭터 방어력 3, 방어구 1<br />
+              <strong>PvE 예시:</strong> 적 다이스 5, 적 공격력 2, 캐릭터 방어력 3, 방어구 1<br />
               → 데미지 = (5 × 2) - 3 - 1 = <strong>6</strong>
+            </div>
+            <div className="alert alert-info">
+              <strong>PvP 예시:</strong> 적 공격력 5, 적 다이스 4, 캐릭터 방어력 5, 방어구 0<br />
+              → 데미지 = (5 + 4) - 5 - 0 = <strong>4</strong>
             </div>
           </div>
         </div>
@@ -91,10 +103,18 @@ export default function GuidePage() {
 캐릭터 체력 변화 없음`}
             </pre>
 
-            <h5 className="text-danger mt-3">방어 실패 시</h5>
+            <h5 className="text-danger mt-3">방어 실패 시 (PvE)</h5>
             <p>공격 실패와 동일하게 적의 반격 피해를 받습니다.</p>
             <pre className="bg-light p-2 rounded">
 {`데미지 = (적 다이스 × 적 공격력) - 방어력 - 방어구
+(데미지가 0 미만이면 0으로 처리)
+캐릭터 체력 = 캐릭터 체력 - 데미지`}
+            </pre>
+
+            <h5 className="text-danger mt-3">방어 실패 시 (PvP)</h5>
+            <p>PvP에서는 공격 실패와 동일하게 합산 방식으로 데미지를 계산합니다.</p>
+            <pre className="bg-light p-2 rounded">
+{`데미지 = (적 공격력 + 적 다이스) - 방어력 - 방어구
 (데미지가 0 미만이면 0으로 처리)
 캐릭터 체력 = 캐릭터 체력 - 데미지`}
             </pre>
@@ -140,7 +160,12 @@ export default function GuidePage() {
                   <td>음수일수록 성공 확률 감소 (다이스에 가산)</td>
                 </tr>
                 <tr>
-                  <td><strong>체력 (hp)</strong></td>
+                  <td><strong>최대체력 (maxHp)</strong></td>
+                  <td>캐릭터가 가질 수 있는 최대 체력</td>
+                  <td>체력 회복(↻) 시 이 값으로 복구</td>
+                </tr>
+                <tr>
+                  <td><strong>현재체력 (hp)</strong></td>
                   <td>피해를 받을 때 감소</td>
                   <td>0이 되면 사망, 행동 불가</td>
                 </tr>
@@ -176,6 +201,7 @@ export default function GuidePage() {
                 <tr><td><code>%캐체력%</code></td><td>전투 후 캐릭터 체력</td></tr>
                 <tr><td><code>%캐다이스%</code></td><td>캐릭터 다이스 결과 (디버프가 있으면 표시)</td></tr>
                 <tr><td><code>%데미지%</code></td><td>이번 전투에서 발생한 피해량</td></tr>
+                <tr><td><code>%계산식%</code></td><td>데미지 계산 과정 (어떻게 데미지가 산출되었는지)</td></tr>
               </tbody>
             </table>
             <h5 className="mt-3">조사 자동 처리</h5>
@@ -211,13 +237,19 @@ export default function GuidePage() {
   │   │
   │   ├─ [공격 모드]
   │   │   ├─ 성공 → 데미지 = 공격력 + 무기  → 적 체력 감소
-  │   │   └─ 실패 → 반격 데미지 = (적다이스 × 적공격력) - 방어력 - 방어구 → 캐릭터 체력 감소
+  │   │   └─ 실패
+  │   │       ├─ PvE → 반격 데미지 = (적다이스 × 적공격력) - 방어력 - 방어구
+  │   │       └─ PvP → 반격 데미지 = (적공격력 + 적다이스) - 방어력 - 방어구
   │   │
   │   └─ [방어 모드]
   │       ├─ 성공 → 피해 없음
-  │       └─ 실패 → 반격 데미지 = (적다이스 × 적공격력) - 방어력 - 방어구 → 캐릭터 체력 감소
+  │       └─ 실패
+  │           ├─ PvE → 반격 데미지 = (적다이스 × 적공격력) - 방어력 - 방어구
+  │           └─ PvP → 반격 데미지 = (적공격력 + 적다이스) - 방어력 - 방어구
   │
-  └─ [결과 출력] (메세지 템플릿에 값 치환)`}
+  ├─ 사망한 적(체력 0)은 공격 대상 선택 불가
+  │
+  └─ [결과 출력] (메세지 템플릿에 값 치환, %계산식% 포함)`}
             </pre>
           </div>
         </div>

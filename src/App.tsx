@@ -4,15 +4,38 @@ import { AuthProvider } from './contexts/AuthContext';
 import { ConnectionProvider } from './contexts/ConnectionContext';
 import Layout from './components/Layout';
 
-const HomePage = lazy(() => import('./pages/HomePage'));
-const CalcPage = lazy(() => import('./pages/CalcPage'));
-const CharacterPage = lazy(() => import('./pages/CharacterPage'));
-const GuidePage = lazy(() => import('./pages/GuidePage'));
-const LoginPage = lazy(() => import('./pages/LoginPage'));
-const RegisterPage = lazy(() => import('./pages/RegisterPage'));
-const TermsPage = lazy(() => import('./pages/TermsPage'));
-const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
-const SettingsPage = lazy(() => import('./pages/SettingsPage'));
+/** lazy import 실패 시(누락된 에셋 등) 페이지를 새로고침하는 래퍼 */
+function lazyWithReload(factory: () => Promise<{ default: React.ComponentType }>) {
+  return lazy(() =>
+    factory().catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      // 청크 로딩 실패 시 페이지를 새로고침 (무한 루프 방지)
+      if (
+        message.includes('Failed to fetch dynamically imported module') ||
+        message.includes('Loading chunk') ||
+        message.includes('Loading CSS chunk')
+      ) {
+        const key = 'chunk_reload_ts';
+        const lastReload = Number(sessionStorage.getItem(key) || '0');
+        if (Date.now() - lastReload > 10000) {
+          sessionStorage.setItem(key, String(Date.now()));
+          window.location.reload();
+        }
+      }
+      throw error;
+    }),
+  );
+}
+
+const HomePage = lazyWithReload(() => import('./pages/HomePage'));
+const CalcPage = lazyWithReload(() => import('./pages/CalcPage'));
+const CharacterPage = lazyWithReload(() => import('./pages/CharacterPage'));
+const GuidePage = lazyWithReload(() => import('./pages/GuidePage'));
+const LoginPage = lazyWithReload(() => import('./pages/LoginPage'));
+const RegisterPage = lazyWithReload(() => import('./pages/RegisterPage'));
+const TermsPage = lazyWithReload(() => import('./pages/TermsPage'));
+const PrivacyPage = lazyWithReload(() => import('./pages/PrivacyPage'));
+const SettingsPage = lazyWithReload(() => import('./pages/SettingsPage'));
 
 export default function App() {
   return (
