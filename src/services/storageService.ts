@@ -46,7 +46,7 @@ export const DEFAULT_CHARACTERS: Character[] = [
 
 /** 기본 적 캐릭터 데이터 */
 export const DEFAULT_ENEMY_CHARACTERS: EnemyCharacter[] = [
-  { id: 1, num: 1, name: '적 1', atk: 2, maxHp: 10, hp: 10 },
+  { id: 1, num: 1, name: '적 1', atk: 2, maxHp: 30, hp: 30 },
 ];
 
 /**
@@ -128,7 +128,7 @@ class LocalStorageService implements IStorageService {
   }
 
   getEnemyHp(): number {
-    return parseInt(localStorage.getItem(STORAGE_KEYS.enemyhp) || '10', 10);
+    return parseInt(localStorage.getItem(STORAGE_KEYS.enemyhp) || '30', 10);
   }
 
   setEnemyHp(hp: number): void {

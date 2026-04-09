@@ -86,9 +86,9 @@ describe('calculateBattle', () => {
     });
     const result = calculateBattle(baseChar, 'atk', 'pve', '적', 2, 10, templates);
     expect(result.success).toBe(false);
-    // PvE: damage = max(0, 6*2 - 5 - 0) = 7
-    expect(result.damage).toBe(7);
-    expect(result.newCharHp).toBe(93); // 100 - 7
+    // 통일 공식: damage = max(0, 2 + 6 - 5 - 0) = 3
+    expect(result.damage).toBe(3);
+    expect(result.newCharHp).toBe(97); // 100 - 3
     expect(result.newEnemyHp).toBe(10); // unchanged
     vi.restoreAllMocks();
   });
@@ -107,7 +107,7 @@ describe('calculateBattle', () => {
     vi.restoreAllMocks();
   });
 
-  it('PvE attack failure uses multiplication formula', () => {
+  it('PvE attack failure uses same formula as PvP (addition)', () => {
     let callCount = 0;
     vi.spyOn(Math, 'random').mockImplementation(() => {
       callCount++;
@@ -115,9 +115,9 @@ describe('calculateBattle', () => {
     });
     const result = calculateBattle(baseChar, 'atk', 'pve', '적', 5, 100, templates);
     expect(result.success).toBe(false);
-    // PvE: damage = max(0, 6*5 - 5 - 0) = 25
-    expect(result.damage).toBe(25);
-    expect(result.newCharHp).toBe(75); // 100 - 25
+    // 통일 공식: damage = max(0, 5 + 6 - 5 - 0) = 6
+    expect(result.damage).toBe(6);
+    expect(result.newCharHp).toBe(94); // 100 - 6
     vi.restoreAllMocks();
   });
 

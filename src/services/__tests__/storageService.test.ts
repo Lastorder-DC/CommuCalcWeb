@@ -62,7 +62,7 @@ describe('storageService', () => {
   describe('enemy state', () => {
     it('returns defaults for enemy name, hp, atk', () => {
       expect(storageService.getEnemyName()).toBe('');
-      expect(storageService.getEnemyHp()).toBe(10);
+      expect(storageService.getEnemyHp()).toBe(30);
       expect(storageService.getEnemyAtk()).toBe(2);
     });
 

@@ -67,7 +67,7 @@ export function replaceValue(
 export function calculateBattle(
   character: Character,
   mode: BattleMode,
-  battleType: BattleType,
+  _battleType: BattleType,
   enemyName: string,
   enemyAtkStat: number,
   currentEnemyHp: number,
@@ -93,15 +93,9 @@ export function calculateBattle(
       newEnemyHp = Math.max(0, currentEnemyHp - damage);
     } else {
       templateKey = 'atkfailed';
-      if (battleType === 'pvp') {
-        // PvP: 적 공격력 + 적 다이스 - 방어력 - 방어구
-        damage = Math.max(0, enemyAtkStat + enemyDiceRoll - character.def - character.defb);
-        damageFormula = `max(0, 적공격력(${enemyAtkStat}) + 적다이스(${enemyDiceRoll}) - 방어력(${character.def}) - 방어구(${character.defb})) = ${damage}`;
-      } else {
-        // PvE: 적 다이스 × 적 공격력 - 방어력 - 방어구
-        damage = Math.max(0, enemyDiceRoll * enemyAtkStat - character.def - character.defb);
-        damageFormula = `max(0, 적다이스(${enemyDiceRoll}) × 적공격력(${enemyAtkStat}) - 방어력(${character.def}) - 방어구(${character.defb})) = ${damage}`;
-      }
+      // 통일 공식: 적 공격력 + 적 다이스 - 방어력 - 방어구
+      damage = Math.max(0, enemyAtkStat + enemyDiceRoll - character.def - character.defb);
+      damageFormula = `max(0, 적공격력(${enemyAtkStat}) + 적다이스(${enemyDiceRoll}) - 방어력(${character.def}) - 방어구(${character.defb})) = ${damage}`;
       newCharHp = Math.max(0, character.hp - damage);
     }
   } else {
@@ -111,13 +105,9 @@ export function calculateBattle(
       damageFormula = '방어 성공 — 피해 없음';
     } else {
       templateKey = 'deffailed';
-      if (battleType === 'pvp') {
-        damage = Math.max(0, enemyAtkStat + enemyDiceRoll - character.def - character.defb);
-        damageFormula = `max(0, 적공격력(${enemyAtkStat}) + 적다이스(${enemyDiceRoll}) - 방어력(${character.def}) - 방어구(${character.defb})) = ${damage}`;
-      } else {
-        damage = Math.max(0, enemyDiceRoll * enemyAtkStat - character.def - character.defb);
-        damageFormula = `max(0, 적다이스(${enemyDiceRoll}) × 적공격력(${enemyAtkStat}) - 방어력(${character.def}) - 방어구(${character.defb})) = ${damage}`;
-      }
+      // 통일 공식: 적 공격력 + 적 다이스 - 방어력 - 방어구
+      damage = Math.max(0, enemyAtkStat + enemyDiceRoll - character.def - character.defb);
+      damageFormula = `max(0, 적공격력(${enemyAtkStat}) + 적다이스(${enemyDiceRoll}) - 방어력(${character.def}) - 방어구(${character.defb})) = ${damage}`;
       newCharHp = Math.max(0, character.hp - damage);
     }
   }

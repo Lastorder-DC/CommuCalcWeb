@@ -14,7 +14,7 @@ export default function CalcPage() {
   const [selectedChar, setSelectedChar] = useState('');
   const [selectedEnemy, setSelectedEnemy] = useState('');
   const [enemyName, setEnemyName] = useState('');
-  const [enemyHp, setEnemyHp] = useState(10);
+  const [enemyHp, setEnemyHp] = useState(30);
   const [enemyAtk, setEnemyAtk] = useState(2);
   const [battleMode, setBattleMode] = useState<BattleMode>('atk');
   const [currentCharHp, setCurrentCharHp] = useState(0);
