@@ -1,5 +1,5 @@
 import { getApiUrl, API_RETRY_COUNT, API_RETRY_DELAY } from '../config';
-import type { AuthResponse, LoginRequest, RegisterRequest, SaveData, User } from '../types';
+import type { AuthResponse, HealthResponse, LoginRequest, RegisterRequest, SaveData, User } from '../types';
 
 /** 토큰 저장 키 */
 const TOKEN_STORAGE_KEY = 'auth_token';
@@ -51,8 +51,8 @@ async function apiRequest<T>(
   return JSON.parse(text) as T;
 }
 
-/** API 서버 연결 테스트 (재시도 포함) */
-export async function testConnection(): Promise<boolean> {
+/** API 서버 연결 테스트 (재시도 포함) – 성공 시 health 응답을 반환 */
+export async function testConnection(): Promise<HealthResponse | null> {
   const baseUrl = getApiUrl();
 
   for (let i = 0; i < API_RETRY_COUNT; i++) {
@@ -67,7 +67,10 @@ export async function testConnection(): Promise<boolean> {
 
       clearTimeout(timeoutId);
 
-      if (response.ok) return true;
+      if (response.ok) {
+        const data: HealthResponse = await response.json();
+        return data;
+      }
     } catch {
       // 연결 실패 시 재시도
     }
@@ -77,7 +80,7 @@ export async function testConnection(): Promise<boolean> {
     }
   }
 
-  return false;
+  return null;
 }
 
 /** 로그인 */

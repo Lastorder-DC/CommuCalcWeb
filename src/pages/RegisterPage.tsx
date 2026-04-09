@@ -24,6 +24,11 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!/^[가-힣a-zA-Z0-9 ]{2,20}$/.test(username) || username !== username.trim()) {
+      setError('닉네임은 2~20자의 한글·영문·숫자·띄어쓰기만 사용 가능합니다. (앞뒤 공백 불가)');
+      return;
+    }
+
     if (password !== passwordConfirm) {
       setError('비밀번호가 일치하지 않습니다.');
       return;
@@ -67,7 +72,7 @@ export default function RegisterPage() {
 
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
-            <label htmlFor="username" className="form-label">사용자 이름</label>
+            <label htmlFor="username" className="form-label">닉네임</label>
             <input
               id="username"
               type="text"
@@ -75,9 +80,12 @@ export default function RegisterPage() {
               value={username}
               onChange={e => setUsername(e.target.value)}
               required
+              maxLength={20}
+              pattern="[가-힣a-zA-Z0-9][가-힣a-zA-Z0-9 ]{0,18}[가-힣a-zA-Z0-9]|[가-힣a-zA-Z0-9]{1}"
               disabled={!isOnline || loading}
               autoComplete="username"
             />
+            <div className="form-text">2~20자, 한글·영문·숫자·띄어쓰기만 사용 가능합니다.</div>
           </div>
           <div className="mb-3">
             <label htmlFor="email" className="form-label">이메일</label>
