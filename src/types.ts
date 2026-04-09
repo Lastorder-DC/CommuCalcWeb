@@ -29,18 +29,43 @@ export interface BattleResult {
   charDice: number;
 }
 
-/** 사용자 정보 (추후 로그인 기능용) */
+/** 사용자 정보 */
 export interface User {
   id: string;
   username: string;
-  email?: string;
+  email: string;
 }
 
-/** 저장 데이터 형식 (추후 DB 저장/불러오기용) */
+/** 저장 데이터 형식 */
 export interface SaveData {
   characters: Character[];
   messageTemplates: MessageTemplates;
   enemyName: string;
   enemyHp: number;
   enemyAtk: number;
+}
+
+/** API 로그인 요청 */
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+/** API 회원가입 요청 */
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  username: string;
+}
+
+/** API 인증 응답 */
+export interface AuthResponse {
+  token: string;
+  user: User;
+}
+
+/** API 에러 응답 */
+export interface ApiError {
+  message: string;
+  code?: string;
 }

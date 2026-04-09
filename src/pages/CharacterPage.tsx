@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback, type ChangeEvent } from 'reac
 import { storageService, DEFAULT_TEMPLATES } from '../services/storageService';
 import type { Character, MessageTemplateKey } from '../types';
 import { TabulatorFull as Tabulator, type CellComponent } from 'tabulator-tables';
+import { useDataSync } from '../hooks/useDataSync';
 import 'tabulator-tables/dist/css/tabulator.min.css';
 import 'tabulator-tables/dist/css/tabulator_modern.min.css';
 
@@ -10,6 +11,8 @@ export default function CharacterPage() {
   const tabulatorInstance = useRef<Tabulator | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [templates, setTemplates] = useState(storageService.getMessageTemplates());
+  const { syncToServer, syncFromServer, canSync } = useDataSync();
+  const [syncing, setSyncing] = useState(false);
 
   const updateChars = useCallback((chars: Character[]) => {
     setCharacters(chars);
@@ -219,6 +222,57 @@ export default function CharacterPage() {
           >
             기본값으로 초기화
           </button>
+          {canSync && (
+            <>
+              <button
+                type="button"
+                className="btn btn-outline-primary me-2"
+                disabled={syncing}
+                onClick={async () => {
+                  setSyncing(true);
+                  try {
+                    await syncToServer();
+                    alert('서버에 데이터를 저장했습니다.');
+                  } catch {
+                    alert('서버 저장에 실패했습니다.');
+                  } finally {
+                    setSyncing(false);
+                  }
+                }}
+              >
+                {syncing ? '동기화 중...' : '서버에 저장'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-success me-2"
+                disabled={syncing}
+                onClick={async () => {
+                  setSyncing(true);
+                  try {
+                    const loaded = await syncFromServer();
+                    if (loaded) {
+                      // 테이블과 템플릿 새로고침
+                      const newChars = storageService.getCharacters();
+                      setCharacters(newChars);
+                      if (tabulatorInstance.current) {
+                        tabulatorInstance.current.replaceData(newChars);
+                      }
+                      setTemplates(storageService.getMessageTemplates());
+                      alert('서버에서 데이터를 불러왔습니다.');
+                    } else {
+                      alert('서버에 저장된 데이터가 없습니다.');
+                    }
+                  } catch {
+                    alert('서버에서 데이터 불러오기에 실패했습니다.');
+                  } finally {
+                    setSyncing(false);
+                  }
+                }}
+              >
+                {syncing ? '동기화 중...' : '서버에서 불러오기'}
+              </button>
+            </>
+          )}
         </div>
         <p>
           %적이름% : 적 이름<br />

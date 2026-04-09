@@ -1,22 +1,37 @@
-import { useState, useCallback, type ReactNode } from 'react';
+import { useState, useCallback, useEffect, type ReactNode } from 'react';
 import type { User } from '../types';
 import { AuthContext } from './AuthContextDef';
+import * as apiService from '../services/apiService';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const login = useCallback(async (_username: string, _password: string) => {
-    // TODO: 추후 서버 API 연동시 실제 로그인 로직 구현
-    // const response = await fetch('/api/auth/login', { ... });
-    // const userData = await response.json();
-    // setUser(userData);
-    console.warn('로그인 기능은 아직 구현되지 않았습니다.');
-    setUser(null);
+  // 앱 시작시 저장된 토큰으로 사용자 정보 복원
+  useEffect(() => {
+    const token = apiService.getStoredToken();
+    if (token) {
+      apiService.getCurrentUser()
+        .then(setUser)
+        .catch(() => setUser(null))
+        .finally(() => setIsLoading(false));
+    } else {
+      setIsLoading(false);
+    }
   }, []);
 
-  const logout = useCallback(() => {
-    // TODO: 추후 서버 API 연동시 실제 로그아웃 로직 구현
+  const login = useCallback(async (email: string, password: string) => {
+    const result = await apiService.login({ email, password });
+    setUser(result.user);
+  }, []);
+
+  const register = useCallback(async (email: string, password: string, username: string) => {
+    const result = await apiService.register({ email, password, username });
+    setUser(result.user);
+  }, []);
+
+  const logout = useCallback(async () => {
+    await apiService.logout();
     setUser(null);
   }, []);
 
@@ -24,10 +39,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext value={{
       user,
       isLoggedIn: user !== null,
+      isLoading,
       login,
+      register,
       logout,
     }}>
       {children}
     </AuthContext>
   );
 }
+
