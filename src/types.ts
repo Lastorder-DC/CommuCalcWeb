@@ -11,6 +11,15 @@ export interface Character {
   hp: number;
 }
 
+/** 적 캐릭터 데이터 타입 */
+export interface EnemyCharacter {
+  id: number;
+  num: number;
+  name: string;
+  atk: number;
+  hp: number;
+}
+
 /** 메세지 템플릿 키 */
 export type MessageTemplateKey = 'atksuccess' | 'atkfailed' | 'defsuccess' | 'deffailed';
 
@@ -19,6 +28,9 @@ export type MessageTemplates = Record<MessageTemplateKey, string>;
 
 /** 전투 모드 */
 export type BattleMode = 'atk' | 'def';
+
+/** 전투 타입 (PvE: 아군 vs 적군, PvP: 아군 vs 아군) */
+export type BattleType = 'pve' | 'pvp';
 
 /** 전투 결과 */
 export interface BattleResult {
@@ -39,6 +51,7 @@ export interface User {
 /** 저장 데이터 형식 */
 export interface SaveData {
   characters: Character[];
+  enemyCharacters: EnemyCharacter[];
   messageTemplates: MessageTemplates;
   enemyName: string;
   enemyHp: number;

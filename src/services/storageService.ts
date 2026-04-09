@@ -1,7 +1,8 @@
-import type { Character, MessageTemplates, SaveData } from '../types';
+import type { Character, EnemyCharacter, MessageTemplates, SaveData, BattleType } from '../types';
 
 const STORAGE_KEYS = {
   charlist: 'charlist',
+  enemycharlist: 'enemycharlist',
   atksuccess: 'atksuccess',
   atkfailed: 'atkfailed',
   defsuccess: 'defsuccess',
@@ -11,6 +12,8 @@ const STORAGE_KEYS = {
   enemyatk: 'enemyatk',
   atkdef: 'atkdef',
   charname: 'charname',
+  battletype: 'battletype',
+  selectedenemy: 'selectedenemy',
 } as const;
 
 /** 기본 메세지 템플릿 */
@@ -38,6 +41,11 @@ export const DEFAULT_CHARACTERS: Character[] = [
   { id: 2, num: 2, name: '캐릭터 이름 2', atk: 5, def: 5, atkb: 0, defb: 0, debuff: '-0', hp: 100 },
 ];
 
+/** 기본 적 캐릭터 데이터 */
+export const DEFAULT_ENEMY_CHARACTERS: EnemyCharacter[] = [
+  { id: 1, num: 1, name: '적 1', atk: 2, hp: 10 },
+];
+
 /**
  * 스토리지 서비스
  * 현재는 localStorage를 사용하지만, 추후 서버 API로 교체 가능하도록 인터페이스를 분리합니다.
@@ -45,6 +53,8 @@ export const DEFAULT_CHARACTERS: Character[] = [
 export interface IStorageService {
   getCharacters(): Character[];
   setCharacters(chars: Character[]): void;
+  getEnemyCharacters(): EnemyCharacter[];
+  setEnemyCharacters(chars: EnemyCharacter[]): void;
   getMessageTemplates(): MessageTemplates;
   setMessageTemplate(key: keyof MessageTemplates, value: string): void;
   getEnemyName(): string;
@@ -55,8 +65,12 @@ export interface IStorageService {
   setEnemyAtk(atk: number): void;
   getBattleMode(): 'atk' | 'def';
   setBattleMode(mode: 'atk' | 'def'): void;
+  getBattleType(): BattleType;
+  setBattleType(type: BattleType): void;
   getSelectedChar(): string | null;
   setSelectedChar(value: string): void;
+  getSelectedEnemy(): string | null;
+  setSelectedEnemy(value: string): void;
   exportAll(): SaveData;
   importAll(data: SaveData): void;
 }
@@ -74,6 +88,19 @@ class LocalStorageService implements IStorageService {
 
   setCharacters(chars: Character[]): void {
     localStorage.setItem(STORAGE_KEYS.charlist, JSON.stringify(chars));
+  }
+
+  getEnemyCharacters(): EnemyCharacter[] {
+    const raw = localStorage.getItem(STORAGE_KEYS.enemycharlist);
+    if (!raw) {
+      this.setEnemyCharacters(DEFAULT_ENEMY_CHARACTERS);
+      return [...DEFAULT_ENEMY_CHARACTERS];
+    }
+    return JSON.parse(raw) as EnemyCharacter[];
+  }
+
+  setEnemyCharacters(chars: EnemyCharacter[]): void {
+    localStorage.setItem(STORAGE_KEYS.enemycharlist, JSON.stringify(chars));
   }
 
   getMessageTemplates(): MessageTemplates {
@@ -121,6 +148,14 @@ class LocalStorageService implements IStorageService {
     localStorage.setItem(STORAGE_KEYS.atkdef, mode);
   }
 
+  getBattleType(): BattleType {
+    return (localStorage.getItem(STORAGE_KEYS.battletype) as BattleType) || 'pve';
+  }
+
+  setBattleType(type: BattleType): void {
+    localStorage.setItem(STORAGE_KEYS.battletype, type);
+  }
+
   getSelectedChar(): string | null {
     return localStorage.getItem(STORAGE_KEYS.charname);
   }
@@ -129,9 +164,18 @@ class LocalStorageService implements IStorageService {
     localStorage.setItem(STORAGE_KEYS.charname, value);
   }
 
+  getSelectedEnemy(): string | null {
+    return localStorage.getItem(STORAGE_KEYS.selectedenemy);
+  }
+
+  setSelectedEnemy(value: string): void {
+    localStorage.setItem(STORAGE_KEYS.selectedenemy, value);
+  }
+
   exportAll(): SaveData {
     return {
       characters: this.getCharacters(),
+      enemyCharacters: this.getEnemyCharacters(),
       messageTemplates: this.getMessageTemplates(),
       enemyName: this.getEnemyName(),
       enemyHp: this.getEnemyHp(),
@@ -141,6 +185,9 @@ class LocalStorageService implements IStorageService {
 
   importAll(data: SaveData): void {
     this.setCharacters(data.characters);
+    if (data.enemyCharacters) {
+      this.setEnemyCharacters(data.enemyCharacters);
+    }
     for (const key of Object.keys(data.messageTemplates) as (keyof MessageTemplates)[]) {
       this.setMessageTemplate(key, data.messageTemplates[key]);
     }
