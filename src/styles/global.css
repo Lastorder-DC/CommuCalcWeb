@@ -1,0 +1,7 @@
+.tabulator-cell {
+  text-align: center;
+}
+
+div[tabulator-field="name"] {
+  text-align: left;
+}
