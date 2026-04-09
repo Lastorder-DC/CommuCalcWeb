@@ -81,7 +81,7 @@ export default function RegisterPage() {
               onChange={e => setUsername(e.target.value)}
               required
               maxLength={20}
-              pattern="[가-힣a-zA-Z0-9][가-힣a-zA-Z0-9 ]{0,18}[가-힣a-zA-Z0-9]|[가-힣a-zA-Z0-9]{1}"
+              pattern="[가-힣a-zA-Z0-9 ]{2,20}"
               disabled={!isOnline || loading}
               autoComplete="username"
             />
