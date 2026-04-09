@@ -11,6 +11,9 @@ const legalRouter = require('./routes/legal');
 
 const app = express();
 
+// 프록시 뒤에서 실행될 때 X-Forwarded-For 헤더를 신뢰
+app.set('trust proxy', 1);
+
 // 보안 헤더
 app.use(helmet());
 
