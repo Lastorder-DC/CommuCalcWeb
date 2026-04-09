@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import DOMPurify from 'dompurify';
+import Markdown from 'react-markdown';
 import { getTermsOfService } from '../services/apiService';
 import { useConnection } from '../contexts/useConnection';
 
@@ -17,7 +17,7 @@ export default function TermsPage() {
     }
 
     getTermsOfService()
-      .then(html => setContent(DOMPurify.sanitize(html)))
+      .then(setContent)
       .catch(err => setError(err instanceof Error ? err.message : '이용약관을 불러오지 못했습니다.'))
       .finally(() => setLoading(false));
   }, [isOnline]);
@@ -29,10 +29,9 @@ export default function TermsPage() {
         {loading && <div className="text-muted">불러오는 중...</div>}
         {error && <div className="alert alert-warning">{error}</div>}
         {content && (
-          <div
-            className="card p-4"
-            dangerouslySetInnerHTML={{ __html: content }}
-          />
+          <div className="card p-4">
+            <Markdown>{content}</Markdown>
+          </div>
         )}
       </div>
     </div>
