@@ -178,6 +178,22 @@ export default function GuidePage() {
                 <tr><td><code>%데미지%</code></td><td>이번 전투에서 발생한 피해량</td></tr>
               </tbody>
             </table>
+            <h5 className="mt-3">조사 자동 처리</h5>
+            <p>
+              이름 변수 뒤에 조사를 붙이면 받침 유무에 따라 자동으로 올바른 조사가 선택됩니다.
+            </p>
+            <table className="table table-bordered">
+              <thead>
+                <tr><th>사용법</th><th>예시 (캐이름=&quot;홍길동&quot;)</th><th>예시 (캐이름=&quot;나나&quot;)</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><code>%캐이름이/가%</code></td><td>홍길동이</td><td>나나가</td></tr>
+                <tr><td><code>%캐이름을/를%</code></td><td>홍길동을</td><td>나나를</td></tr>
+                <tr><td><code>%캐이름은/는%</code></td><td>홍길동은</td><td>나나는</td></tr>
+                <tr><td><code>%캐이름과/와%</code></td><td>홍길동과</td><td>나나와</td></tr>
+                <tr><td><code>%적이름으로/로%</code></td><td colSpan={2}>적 이름에도 동일하게 사용 가능</td></tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
