@@ -6,12 +6,10 @@ export default function OfflineBanner() {
   if (isOnline || isChecking) return null;
 
   return (
-    <div className="alert alert-warning alert-dismissible mb-0" role="alert" style={{
-      position: 'fixed',
-      bottom: '60px',
-      left: 0,
-      right: 0,
-      zIndex: 1050,
+    <div className="offline-banner alert alert-warning mb-0" role="alert" style={{
+      position: 'sticky',
+      top: 0,
+      zIndex: 1040,
       borderRadius: 0,
       textAlign: 'center',
     }}>
