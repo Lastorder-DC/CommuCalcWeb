@@ -1,8 +1,26 @@
 import type { Character, BattleMode, BattleResult, MessageTemplates } from '../types';
+import { josa } from 'es-hangul';
 
 /** 다이스 계산 (1~max) */
 export function dice(max: number): number {
   return Math.floor(Math.random() * max) + 1;
+}
+
+/**
+ * 조사 플레이스홀더를 실제 값으로 치환
+ * %적이름이/가%, %캐이름을/를% 등의 패턴을 지원
+ */
+// 지원 조사 패턴: 이/가, 을/를, 은/는, 와/과, 으로/로
+const JOSA_PATTERN = /%([^%]+?)(이\/가|을\/를|은\/는|와\/과|으로\/로)%/g;
+
+function replaceJosa(message: string, placeholders: Record<string, string>): string {
+  return message.replace(JOSA_PATTERN, (_match, key, particle) => {
+    const value = placeholders[key];
+    if (value !== undefined) {
+      return josa(value, particle);
+    }
+    return _match;
+  });
 }
 
 /** 메세지 내 플레이스홀더를 실제 값으로 치환 */
@@ -18,6 +36,15 @@ export function replaceValue(
   debuff: string,
 ): string {
   let result = message;
+
+  // 조사 자동 처리 (es-hangul josa)
+  const placeholders: Record<string, string> = {
+    '적이름': enemyName,
+    '캐이름': charName,
+  };
+  result = replaceJosa(result, placeholders);
+
+  // 기본 플레이스홀더 치환
   result = result.replace(/%적이름%/g, enemyName);
   result = result.replace(/%캐이름%/g, charName);
   result = result.replace(/%적다이스%/g, String(enemyDice));

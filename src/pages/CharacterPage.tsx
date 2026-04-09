@@ -229,6 +229,13 @@ export default function CharacterPage() {
           %캐다이스% : 캐릭터 다이스 숫자(디버프 포함)<br />
           %데미지% : 적에게 입힌 피해 / 캐릭터가 받은 피해
         </p>
+        <p>
+          <strong>조사 자동 처리</strong><br />
+          이름 뒤에 조사를 붙이면 받침에 맞게 자동으로 변환됩니다.<br />
+          예: <code>%캐이름이/가%</code> → &quot;홍길동이&quot; 또는 &quot;나나가&quot;<br />
+          예: <code>%적이름을/를%</code> → &quot;드래곤을&quot; 또는 &quot;오크를&quot;<br />
+          지원 조사: 이/가, 을/를, 은/는, 와/과, 으로/로 등
+        </p>
       </div>
     </>
   );
