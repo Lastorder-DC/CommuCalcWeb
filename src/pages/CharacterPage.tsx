@@ -60,13 +60,15 @@ export default function CharacterPage() {
           title: '관리',
           field: 'manage',
           editor: undefined,
-          formatter: () => '<span style="cursor:pointer" title="체력 회복">↻</span> <span style="cursor:pointer" title="삭제">❌</span>',
+          formatter: () => '<span style="cursor:pointer" title="체력 회복" data-action="restore">↻</span> <span style="cursor:pointer" title="삭제" data-action="delete">❌</span>',
           cellClick: (_e: UIEvent, cell: CellComponent) => {
-            const target = _e.target as HTMLElement;
+            const target = (_e.target as HTMLElement).closest('[data-action]') as HTMLElement | null;
+            if (!target) return;
+            const action = target.dataset.action;
             const row = cell.getRow();
             const data = row.getData() as Character;
 
-            if (target.textContent?.trim() === '↻') {
+            if (action === 'restore') {
               if (!confirm('체력을 최대체력으로 회복하시겠습니까?')) return;
               const current = table.getData() as Character[];
               const updated = current.map(c =>
@@ -77,7 +79,7 @@ export default function CharacterPage() {
               return;
             }
 
-            if (target.textContent?.trim() === '❌') {
+            if (action === 'delete') {
               if (!confirm('캐릭터를 삭제하시겠습니까?')) return;
               const current = table.getData() as Character[];
               let id = 1;
@@ -162,13 +164,15 @@ export default function CharacterPage() {
           title: '관리',
           field: 'manage',
           editor: undefined,
-          formatter: () => '<span style="cursor:pointer" title="체력 회복">↻</span> <span style="cursor:pointer" title="삭제">❌</span>',
+          formatter: () => '<span style="cursor:pointer" title="체력 회복" data-action="restore">↻</span> <span style="cursor:pointer" title="삭제" data-action="delete">❌</span>',
           cellClick: (_e: UIEvent, cell: CellComponent) => {
-            const target = _e.target as HTMLElement;
+            const target = (_e.target as HTMLElement).closest('[data-action]') as HTMLElement | null;
+            if (!target) return;
+            const action = target.dataset.action;
             const row = cell.getRow();
             const data = row.getData() as EnemyCharacter;
 
-            if (target.textContent?.trim() === '↻') {
+            if (action === 'restore') {
               if (!confirm('체력을 최대체력으로 회복하시겠습니까?')) return;
               const current = table.getData() as EnemyCharacter[];
               const updated = current.map(c =>
@@ -179,7 +183,7 @@ export default function CharacterPage() {
               return;
             }
 
-            if (target.textContent?.trim() === '❌') {
+            if (action === 'delete') {
               if (!confirm('적 캐릭터를 삭제하시겠습니까?')) return;
               const current = table.getData() as EnemyCharacter[];
               let id = 1;
