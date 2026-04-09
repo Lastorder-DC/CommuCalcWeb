@@ -21,10 +21,12 @@ export const DEFAULT_TEMPLATES: MessageTemplates = {
   atksuccess:
     '%캐이름%의 공격! [다이스: %캐다이스% vs %적다이스%]\n' +
     '%적이름%에게 %데미지%의 피해를 입혔다!\n' +
+    '계산식: %계산식%\n' +
     '%적이름%의 남은 체력: %적체력%',
   atkfailed:
     '%캐이름%의 공격이 빗나갔다! [다이스: %캐다이스% vs %적다이스%]\n' +
     '%적이름%의 반격! %캐이름%에게 %데미지%의 피해!\n' +
+    '계산식: %계산식%\n' +
     '%캐이름%의 남은 체력: %캐체력%',
   defsuccess:
     '%캐이름이/가% %적이름%의 공격을 막아냈다! [다이스: %캐다이스% vs %적다이스%]\n' +
@@ -32,18 +34,19 @@ export const DEFAULT_TEMPLATES: MessageTemplates = {
   deffailed:
     '%캐이름이/가% %적이름%의 공격을 막지 못했다! [다이스: %캐다이스% vs %적다이스%]\n' +
     '%적이름%의 공격! %캐이름%에게 %데미지%의 피해!\n' +
+    '계산식: %계산식%\n' +
     '%캐이름%의 남은 체력: %캐체력%',
 };
 
 /** 기본 캐릭터 데이터 */
 export const DEFAULT_CHARACTERS: Character[] = [
-  { id: 1, num: 1, name: '캐릭터 이름 1', atk: 5, def: 5, atkb: 0, defb: 0, debuff: '-0', hp: 100 },
-  { id: 2, num: 2, name: '캐릭터 이름 2', atk: 5, def: 5, atkb: 0, defb: 0, debuff: '-0', hp: 100 },
+  { id: 1, num: 1, name: '캐릭터 이름 1', atk: 5, def: 5, atkb: 0, defb: 0, debuff: '-0', maxHp: 100, hp: 100 },
+  { id: 2, num: 2, name: '캐릭터 이름 2', atk: 5, def: 5, atkb: 0, defb: 0, debuff: '-0', maxHp: 100, hp: 100 },
 ];
 
 /** 기본 적 캐릭터 데이터 */
 export const DEFAULT_ENEMY_CHARACTERS: EnemyCharacter[] = [
-  { id: 1, num: 1, name: '적 1', atk: 2, hp: 10 },
+  { id: 1, num: 1, name: '적 1', atk: 2, maxHp: 10, hp: 10 },
 ];
 
 /**

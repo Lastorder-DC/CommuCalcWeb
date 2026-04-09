@@ -8,6 +8,7 @@ export interface Character {
   atkb: number;
   defb: number;
   debuff: string;
+  maxHp: number;
   hp: number;
 }
 
@@ -17,6 +18,7 @@ export interface EnemyCharacter {
   num: number;
   name: string;
   atk: number;
+  maxHp: number;
   hp: number;
 }
 
