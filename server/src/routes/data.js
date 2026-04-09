@@ -31,8 +31,8 @@ router.put('/', authMiddleware, async (req, res) => {
 
     await pool.execute(
       `INSERT INTO user_data (user_id, data) VALUES (?, ?)
-       ON DUPLICATE KEY UPDATE data = VALUES(data), updated_at = NOW()`,
-      [req.user.id, data],
+       ON DUPLICATE KEY UPDATE data = ?, updated_at = NOW()`,
+      [req.user.id, data, data],
     );
 
     res.status(204).end();
