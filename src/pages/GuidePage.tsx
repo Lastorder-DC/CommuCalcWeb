@@ -191,7 +191,7 @@ export default function GuidePage() {
                 <tr><td><code>%캐이름을/를%</code></td><td>홍길동을</td><td>나나를</td></tr>
                 <tr><td><code>%캐이름은/는%</code></td><td>홍길동은</td><td>나나는</td></tr>
                 <tr><td><code>%캐이름과/와%</code></td><td>홍길동과</td><td>나나와</td></tr>
-                <tr><td><code>%적이름으로/로%</code></td><td colSpan={2}>적 이름에도 동일하게 사용 가능</td></tr>
+                <tr><td><code>%적이름으로/로%</code></td><td>드래곤으로</td><td>오크로</td></tr>
               </tbody>
             </table>
           </div>

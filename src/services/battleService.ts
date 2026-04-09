@@ -10,9 +10,11 @@ export function dice(max: number): number {
  * 조사 플레이스홀더를 실제 값으로 치환
  * %적이름이/가%, %캐이름을/를% 등의 패턴을 지원
  */
+// 지원 조사 패턴: 이/가, 을/를, 은/는, 와/과, 으로/로
+const JOSA_PATTERN = /%([^%]+?)(이\/가|을\/를|은\/는|와\/과|으로\/로)%/g;
+
 function replaceJosa(message: string, placeholders: Record<string, string>): string {
-  // 조사 패턴: %이름이/가%, %이름을/를% 등
-  return message.replace(/%([^%]+?)([이가을를은는와과으로]{1,2}\/[이가을를은는와과으로로]{1,2})%/g, (_match, key, particle) => {
+  return message.replace(JOSA_PATTERN, (_match, key, particle) => {
     const value = placeholders[key];
     if (value !== undefined) {
       return josa(value, particle);
