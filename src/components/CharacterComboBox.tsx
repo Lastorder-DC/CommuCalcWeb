@@ -48,14 +48,26 @@ export default function CharacterComboBox({ id, options, value, onChange, placeh
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [options, value]);
 
+  const sortOptions = useCallback((text: string) => {
+    if (text === '') return options;
+    const lower = text.toLowerCase();
+    const matching: ComboBoxOption[] = [];
+    const rest: ComboBoxOption[] = [];
+    for (const o of options) {
+      if (o.label.toLowerCase().includes(lower)) {
+        matching.push(o);
+      } else {
+        rest.push(o);
+      }
+    }
+    return [...matching, ...rest];
+  }, [options]);
+
   const handleInputChange = useCallback((text: string) => {
     setInputText(text);
     setIsOpen(true);
-    const lower = text.toLowerCase();
-    setFilteredOptions(
-      text === '' ? options : options.filter(o => o.label.toLowerCase().includes(lower))
-    );
-  }, [options]);
+    setFilteredOptions(sortOptions(text));
+  }, [sortOptions]);
 
   const handleSelect = useCallback((opt: ComboBoxOption) => {
     onChange(opt.value);
@@ -69,12 +81,14 @@ export default function CharacterComboBox({ id, options, value, onChange, placeh
       const selected = options.find(o => o.value === value);
       setInputText(selected ? selected.label : '');
     } else if (e.key === 'Enter') {
-      // 필터된 결과가 하나이면 자동 선택
-      if (filteredOptions.length === 1) {
-        handleSelect(filteredOptions[0]);
+      // 매칭되는 결과가 하나이면 자동 선택
+      const lower = inputText.toLowerCase();
+      const matching = filteredOptions.filter(o => o.label.toLowerCase().includes(lower));
+      if (matching.length === 1) {
+        handleSelect(matching[0]);
       }
     }
-  }, [options, value, filteredOptions, handleSelect]);
+  }, [options, value, inputText, filteredOptions, handleSelect]);
 
   return (
     <div ref={containerRef} style={{ position: 'relative' }}>
@@ -89,9 +103,7 @@ export default function CharacterComboBox({ id, options, value, onChange, placeh
           onChange={e => handleInputChange(e.target.value)}
           onFocus={() => {
             setIsOpen(true);
-            setFilteredOptions(inputText === '' ? options :
-              options.filter(o => o.label.toLowerCase().includes(inputText.toLowerCase()))
-            );
+            setFilteredOptions(sortOptions(inputText));
           }}
           onKeyDown={handleKeyDown}
           autoComplete="off"
@@ -102,7 +114,7 @@ export default function CharacterComboBox({ id, options, value, onChange, placeh
           onClick={() => {
             setIsOpen(!isOpen);
             if (!isOpen) {
-              setFilteredOptions(options);
+              setFilteredOptions(sortOptions(inputText));
               inputRef.current?.focus();
             }
           }}
@@ -137,21 +149,6 @@ export default function CharacterComboBox({ id, options, value, onChange, placeh
             </li>
           ))}
         </ul>
-      )}
-      {isOpen && filteredOptions.length === 0 && (
-        <div
-          className="list-group"
-          style={{
-            position: 'absolute',
-            zIndex: 1050,
-            width: '100%',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
-          }}
-        >
-          <div className="list-group-item text-muted" style={{ padding: '6px 12px' }}>
-            검색 결과가 없습니다
-          </div>
-        </div>
       )}
     </div>
   );
