@@ -1,15 +1,18 @@
 import { useState, useEffect, useRef, useCallback, type ChangeEvent } from 'react';
 import { storageService, DEFAULT_TEMPLATES } from '../services/storageService';
-import type { Character, MessageTemplateKey } from '../types';
+import type { Character, EnemyCharacter, MessageTemplateKey } from '../types';
 import { TabulatorFull as Tabulator, type CellComponent } from 'tabulator-tables';
 import { useDataSync } from '../hooks/useDataSync';
 import 'tabulator-tables/dist/css/tabulator.min.css';
 import 'tabulator-tables/dist/css/tabulator_modern.min.css';
 
 export default function CharacterPage() {
-  const tableRef = useRef<HTMLDivElement>(null);
-  const tabulatorInstance = useRef<Tabulator | null>(null);
+  const allyTableRef = useRef<HTMLDivElement>(null);
+  const enemyTableRef = useRef<HTMLDivElement>(null);
+  const allyTabulatorInstance = useRef<Tabulator | null>(null);
+  const enemyTabulatorInstance = useRef<Tabulator | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
+  const [enemyCharacters, setEnemyCharacters] = useState<EnemyCharacter[]>([]);
   const [templates, setTemplates] = useState(storageService.getMessageTemplates());
   const { syncToServer, syncFromServer, canSync } = useDataSync();
   const [syncing, setSyncing] = useState(false);
@@ -19,14 +22,19 @@ export default function CharacterPage() {
     storageService.setCharacters(chars);
   }, []);
 
-  // Tabulator 초기화
+  const updateEnemyChars = useCallback((chars: EnemyCharacter[]) => {
+    setEnemyCharacters(chars);
+    storageService.setEnemyCharacters(chars);
+  }, []);
+
+  // 아군 캐릭터 Tabulator 초기화
   useEffect(() => {
     const chars = storageService.getCharacters();
     setCharacters(chars);
 
-    if (!tableRef.current) return;
+    if (!allyTableRef.current) return;
 
-    const table = new Tabulator(tableRef.current, {
+    const table = new Tabulator(allyTableRef.current, {
       data: chars,
       locale: true,
       layout: 'fitColumns',
@@ -37,9 +45,6 @@ export default function CharacterPage() {
       resizableColumnFit: false,
       resizableRows: false,
       movableRows: false,
-      footerElement:
-        '<button class="tabulator-page" id="addCharBtn">새 캐릭터</button>' +
-        '<button class="tabulator-page" id="emptyDataBtn">데이터 비우기</button>',
       initialSort: [{ column: 'num', dir: 'asc' }],
       columns: [
         { title: '번호', field: 'num', width: 80 },
@@ -104,52 +109,162 @@ export default function CharacterPage() {
       updateChars(data);
     });
 
-    tabulatorInstance.current = table;
-
-    // 푸터 버튼 이벤트 연결
-    const addBtn = document.getElementById('addCharBtn');
-    const emptyBtn = document.getElementById('emptyDataBtn');
-
-    const handleAdd = () => {
-      const current = table.getData() as Character[];
-      const newId = current.length > 0 ? Math.max(...current.map(c => c.num)) + 1 : 1;
-      const newChar: Character = {
-        id: newId,
-        num: newId,
-        name: '여기에 이름 입력',
-        atk: 5,
-        def: 5,
-        atkb: 0,
-        defb: 0,
-        debuff: '-0',
-        hp: 100,
-      };
-      const updated = [...current, newChar];
-      table.replaceData(updated);
-      updateChars(updated);
-    };
-
-    const handleEmpty = () => {
-      table.replaceData([]);
-      updateChars([]);
-    };
-
-    addBtn?.addEventListener('click', handleAdd);
-    emptyBtn?.addEventListener('click', handleEmpty);
+    allyTabulatorInstance.current = table;
 
     return () => {
-      addBtn?.removeEventListener('click', handleAdd);
-      emptyBtn?.removeEventListener('click', handleEmpty);
       table.destroy();
     };
   }, [updateChars]);
 
+  // 적 캐릭터 Tabulator 초기화
+  useEffect(() => {
+    const chars = storageService.getEnemyCharacters();
+    setEnemyCharacters(chars);
+
+    if (!enemyTableRef.current) return;
+
+    const table = new Tabulator(enemyTableRef.current, {
+      data: chars,
+      locale: true,
+      layout: 'fitColumns',
+      history: true,
+      pagination: true,
+      paginationSize: 10,
+      movableColumns: false,
+      resizableColumnFit: false,
+      resizableRows: false,
+      movableRows: false,
+      initialSort: [{ column: 'num', dir: 'asc' }],
+      columns: [
+        { title: '번호', field: 'num', width: 80 },
+        { title: '이름', field: 'name', editor: 'input', minWidth: 100 },
+        { title: '공격력', field: 'atk', editor: 'input', width: 100 },
+        { title: '체력', field: 'hp', editor: 'input', width: 100 },
+        {
+          title: '관리',
+          field: 'manage',
+          editor: undefined,
+          formatter: () => '❌',
+          cellClick: (_e: UIEvent, cell: CellComponent) => {
+            const row = cell.getRow();
+            const num = row.getData().num;
+            const current = table.getData() as EnemyCharacter[];
+            let id = 1;
+            const filtered: EnemyCharacter[] = [];
+            for (const c of current) {
+              if (c.num === num) continue;
+              filtered.push({ ...c, id, num: id });
+              id++;
+            }
+            table.replaceData(filtered);
+            updateEnemyChars(filtered);
+          },
+          width: 80,
+        },
+      ],
+      langs: {
+        'ko-kr': {
+          data: {
+            loading: '불러오는 중',
+            error: '오류',
+          },
+          groups: {
+            item: '적 캐릭터',
+            items: '적 캐릭터',
+          },
+          pagination: {
+            page_size: '페이지 크기',
+            page_title: '페이지 보기',
+            first: '처음',
+            first_title: '첫 페이지',
+            last: '마지막',
+            last_title: '마지막 페이지',
+            prev: '이전',
+            prev_title: '이전 페이지',
+            next: '다음',
+            next_title: '다음 페이지',
+            all: '모두 보기',
+          },
+        },
+      },
+    });
+
+    table.on('cellEdited', () => {
+      const data = table.getData() as EnemyCharacter[];
+      updateEnemyChars(data);
+    });
+
+    enemyTabulatorInstance.current = table;
+
+    return () => {
+      table.destroy();
+    };
+  }, [updateEnemyChars]);
+
+  const handleAddAllyChar = useCallback(() => {
+    const table = allyTabulatorInstance.current;
+    if (!table) return;
+    const current = table.getData() as Character[];
+    const newId = current.length > 0 ? Math.max(...current.map(c => c.num)) + 1 : 1;
+    const newChar: Character = {
+      id: newId,
+      num: newId,
+      name: '여기에 이름 입력',
+      atk: 5,
+      def: 5,
+      atkb: 0,
+      defb: 0,
+      debuff: '-0',
+      hp: 100,
+    };
+    const updated = [...current, newChar];
+    table.replaceData(updated);
+    updateChars(updated);
+  }, [updateChars]);
+
+  const handleEmptyAllyData = useCallback(() => {
+    const table = allyTabulatorInstance.current;
+    if (!table) return;
+    table.replaceData([]);
+    updateChars([]);
+  }, [updateChars]);
+
+  const handleAddEnemyChar = useCallback(() => {
+    const table = enemyTabulatorInstance.current;
+    if (!table) return;
+    const current = table.getData() as EnemyCharacter[];
+    const newId = current.length > 0 ? Math.max(...current.map(c => c.num)) + 1 : 1;
+    const newChar: EnemyCharacter = {
+      id: newId,
+      num: newId,
+      name: '여기에 이름 입력',
+      atk: 2,
+      hp: 10,
+    };
+    const updated = [...current, newChar];
+    table.replaceData(updated);
+    updateEnemyChars(updated);
+  }, [updateEnemyChars]);
+
+  const handleEmptyEnemyData = useCallback(() => {
+    const table = enemyTabulatorInstance.current;
+    if (!table) return;
+    table.replaceData([]);
+    updateEnemyChars([]);
+  }, [updateEnemyChars]);
+
   // characters state가 변경될 때 tabulator와 동기화 (외부 변경 시)
   useEffect(() => {
-    if (tabulatorInstance.current && characters.length >= 0) {
+    if (allyTabulatorInstance.current && characters.length >= 0) {
       // 이미 tabulator 내부에서 관리되므로 별도 동기화 불필요
     }
   }, [characters]);
+
+  useEffect(() => {
+    if (enemyTabulatorInstance.current && enemyCharacters.length >= 0) {
+      // 이미 tabulator 내부에서 관리되므로 별도 동기화 불필요
+    }
+  }, [enemyCharacters]);
 
   const handleTemplateChange = useCallback((key: MessageTemplateKey, e: ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
@@ -160,10 +275,30 @@ export default function CharacterPage() {
   return (
     <>
       <div className="row" style={{ paddingTop: '10px' }}>
-        <h2>캐릭터 목록</h2>
-        <div id="charDB" ref={tableRef} style={{ padding: 0 }}></div>
+        <h2>아군 캐릭터 목록</h2>
+        <div ref={allyTableRef} style={{ padding: 0 }}></div>
+        <div style={{ paddingTop: '8px' }}>
+          <button type="button" className="btn btn-outline-primary btn-sm me-2" onClick={handleAddAllyChar}>
+            새 캐릭터
+          </button>
+          <button type="button" className="btn btn-outline-danger btn-sm" onClick={handleEmptyAllyData}>
+            데이터 비우기
+          </button>
+        </div>
       </div>
-      <div className="row" style={{ paddingTop: '10px' }}>
+      <div className="row" style={{ paddingTop: '20px' }}>
+        <h2>적 캐릭터 목록</h2>
+        <div ref={enemyTableRef} style={{ padding: 0 }}></div>
+        <div style={{ paddingTop: '8px' }}>
+          <button type="button" className="btn btn-outline-primary btn-sm me-2" onClick={handleAddEnemyChar}>
+            새 적 캐릭터
+          </button>
+          <button type="button" className="btn btn-outline-danger btn-sm" onClick={handleEmptyEnemyData}>
+            데이터 비우기
+          </button>
+        </div>
+      </div>
+      <div className="row" style={{ paddingTop: '20px' }}>
         <h2>자동 메세지 생성 설정</h2>
         <div className="mb-3">
           <label htmlFor="atksuccess" className="form-label">공격 성공 메세지 양식</label>
@@ -254,8 +389,13 @@ export default function CharacterPage() {
                       // 테이블과 템플릿 새로고침
                       const newChars = storageService.getCharacters();
                       setCharacters(newChars);
-                      if (tabulatorInstance.current) {
-                        tabulatorInstance.current.replaceData(newChars);
+                      if (allyTabulatorInstance.current) {
+                        allyTabulatorInstance.current.replaceData(newChars);
+                      }
+                      const newEnemyChars = storageService.getEnemyCharacters();
+                      setEnemyCharacters(newEnemyChars);
+                      if (enemyTabulatorInstance.current) {
+                        enemyTabulatorInstance.current.replaceData(newEnemyChars);
                       }
                       setTemplates(storageService.getMessageTemplates());
                       alert('서버에서 데이터를 불러왔습니다.');
