@@ -6,10 +6,14 @@ export interface AuthContextType {
   user: User | null;
   /** 로그인 여부 */
   isLoggedIn: boolean;
-  /** 로그인 처리 (추후 구현) */
-  login: (username: string, password: string) => Promise<void>;
-  /** 로그아웃 처리 (추후 구현) */
-  logout: () => void;
+  /** 로그인 로딩 중 */
+  isLoading: boolean;
+  /** 로그인 처리 */
+  login: (email: string, password: string) => Promise<void>;
+  /** 회원가입 처리 */
+  register: (email: string, password: string, username: string) => Promise<void>;
+  /** 로그아웃 처리 */
+  logout: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);
