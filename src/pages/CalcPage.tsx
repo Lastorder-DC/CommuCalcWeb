@@ -165,7 +165,6 @@ export default function CalcPage() {
     const result = calculateBattle(
       curChar,
       battleMode,
-      battleType,
       enemyName,
       enemyAtk,
       actualEnemyHp,

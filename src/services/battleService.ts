@@ -1,4 +1,4 @@
-import type { Character, BattleMode, BattleResult, BattleType, MessageTemplates } from '../types';
+import type { Character, BattleMode, BattleResult, MessageTemplates } from '../types';
 import { josa } from 'es-hangul';
 
 /** 다이스 계산 (1~max) */
@@ -67,7 +67,6 @@ export function replaceValue(
 export function calculateBattle(
   character: Character,
   mode: BattleMode,
-  _battleType: BattleType,
   enemyName: string,
   enemyAtkStat: number,
   currentEnemyHp: number,
