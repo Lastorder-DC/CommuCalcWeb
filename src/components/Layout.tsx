@@ -67,11 +67,13 @@ export default function Layout() {
         </div>
       </nav>
 
-      <main className="container flex-grow-1" style={{ paddingTop: '4.5rem', paddingBottom: '1rem' }}>
+      <div style={{ paddingTop: '3.5rem' }}>
+        <OfflineBanner />
+      </div>
+
+      <main className="container flex-grow-1" style={{ paddingBottom: '1rem' }}>
         <Outlet />
       </main>
-
-      <OfflineBanner />
       <Footer />
     </div>
   );
