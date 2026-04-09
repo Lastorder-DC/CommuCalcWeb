@@ -23,7 +23,11 @@ router.post('/register', async (req, res) => {
     const { email, password, username } = req.body;
 
     if (!email || !password || !username) {
-      return res.status(400).json({ message: '이메일, 비밀번호, 사용자 이름을 모두 입력해주세요.' });
+      return res.status(400).json({ message: '이메일, 비밀번호, 닉네임을 모두 입력해주세요.' });
+    }
+
+    if (!/^[가-힣a-zA-Z0-9 ]{2,20}$/.test(username) || username !== username.trim()) {
+      return res.status(400).json({ message: '닉네임은 2~20자의 한글·영문·숫자·띄어쓰기만 사용 가능합니다. (앞뒤 공백 불가)' });
     }
 
     if (password.length < 8) {

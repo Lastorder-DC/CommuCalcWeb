@@ -69,3 +69,10 @@ export interface ApiError {
   message: string;
   code?: string;
 }
+
+/** Health 엔드포인트 응답 */
+export interface HealthResponse {
+  status: string;
+  serverVersion: string;
+  minClientVersion: string;
+}
