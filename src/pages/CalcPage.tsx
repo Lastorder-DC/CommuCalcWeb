@@ -151,11 +151,17 @@ export default function CalcPage() {
     }
 
     const actualEnemyHp = currentEnemyHp === '' ? enemyHp : currentEnemyHp;
+
+    if (actualEnemyHp <= 0) {
+      alert('사망한 적은 공격할 수 없습니다!');
+      return;
+    }
     const templates = storageService.getMessageTemplates();
 
     const result = calculateBattle(
       curChar,
       battleMode,
+      battleType,
       enemyName,
       enemyAtk,
       actualEnemyHp,
@@ -165,12 +171,10 @@ export default function CalcPage() {
     setSuccess(result.success ? 'ok' : 'failed');
     setResultText(result.message);
     setCurrentCharHp(result.newCharHp);
+    setCurrentEnemyHp(result.newEnemyHp);
 
     if (result.newEnemyHp <= 0 && battleMode === 'atk' && result.success) {
       alert('적이 쓰러졌습니다!');
-      setCurrentEnemyHp(enemyHp);
-    } else {
-      setCurrentEnemyHp(result.newEnemyHp);
     }
 
     // 캐릭터 HP 업데이트 (DB 반영)
@@ -193,9 +197,8 @@ export default function CalcPage() {
 
     // PvE 모드에서 적 캐릭터 현재 HP를 DB에 반영
     if (battleType === 'pve' && selectedEnemy) {
-      const newHp = (result.newEnemyHp <= 0 && battleMode === 'atk' && result.success) ? enemyHp : result.newEnemyHp;
       const updated = enemyCharacters.map(c =>
-        String(c.num) === selectedEnemy ? { ...c, hp: newHp } : c
+        String(c.num) === selectedEnemy ? { ...c, hp: result.newEnemyHp } : c
       );
       setEnemyCharacters(updated);
       storageService.setEnemyCharacters(updated);

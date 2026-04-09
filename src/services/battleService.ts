@@ -1,4 +1,4 @@
-import type { Character, BattleMode, BattleResult, MessageTemplates } from '../types';
+import type { Character, BattleMode, BattleResult, BattleType, MessageTemplates } from '../types';
 import { josa } from 'es-hangul';
 
 /** 다이스 계산 (1~max) */
@@ -34,6 +34,7 @@ export function replaceValue(
   charHp: number,
   damage: number,
   debuff: string,
+  damageFormula: string,
 ): string {
   let result = message;
 
@@ -51,6 +52,7 @@ export function replaceValue(
   result = result.replace(/%적체력%/g, String(enemyHp));
   result = result.replace(/%캐체력%/g, String(charHp));
   result = result.replace(/%데미지%/g, String(damage));
+  result = result.replace(/%계산식%/g, damageFormula);
 
   if (parseInt(debuff, 10) === 0) {
     result = result.replace(/%캐다이스%/g, String(charDice));
@@ -65,6 +67,7 @@ export function replaceValue(
 export function calculateBattle(
   character: Character,
   mode: BattleMode,
+  battleType: BattleType,
   enemyName: string,
   enemyAtkStat: number,
   currentEnemyHp: number,
@@ -77,6 +80,7 @@ export function calculateBattle(
   const isSuccess = charDiceWithDebuff >= enemyDiceRoll;
 
   let damage = 0;
+  let damageFormula = '';
   let newCharHp = character.hp;
   let newEnemyHp = currentEnemyHp;
   let templateKey: keyof MessageTemplates;
@@ -85,19 +89,35 @@ export function calculateBattle(
     if (isSuccess) {
       templateKey = 'atksuccess';
       damage = character.atk + character.atkb;
+      damageFormula = `공격력(${character.atk}) + 무기(${character.atkb}) = ${damage}`;
       newEnemyHp = Math.max(0, currentEnemyHp - damage);
     } else {
       templateKey = 'atkfailed';
-      damage = Math.max(0, enemyDiceRoll * enemyAtkStat - character.def - character.defb);
+      if (battleType === 'pvp') {
+        // PvP: 적 공격력 + 적 다이스 - 방어력 - 방어구
+        damage = Math.max(0, enemyAtkStat + enemyDiceRoll - character.def - character.defb);
+        damageFormula = `max(0, 적공격력(${enemyAtkStat}) + 적다이스(${enemyDiceRoll}) - 방어력(${character.def}) - 방어구(${character.defb})) = ${damage}`;
+      } else {
+        // PvE: 적 다이스 × 적 공격력 - 방어력 - 방어구
+        damage = Math.max(0, enemyDiceRoll * enemyAtkStat - character.def - character.defb);
+        damageFormula = `max(0, 적다이스(${enemyDiceRoll}) × 적공격력(${enemyAtkStat}) - 방어력(${character.def}) - 방어구(${character.defb})) = ${damage}`;
+      }
       newCharHp = Math.max(0, character.hp - damage);
     }
   } else {
     if (isSuccess) {
       templateKey = 'defsuccess';
       damage = 0;
+      damageFormula = '방어 성공 — 피해 없음';
     } else {
       templateKey = 'deffailed';
-      damage = Math.max(0, enemyDiceRoll * enemyAtkStat - character.def - character.defb);
+      if (battleType === 'pvp') {
+        damage = Math.max(0, enemyAtkStat + enemyDiceRoll - character.def - character.defb);
+        damageFormula = `max(0, 적공격력(${enemyAtkStat}) + 적다이스(${enemyDiceRoll}) - 방어력(${character.def}) - 방어구(${character.defb})) = ${damage}`;
+      } else {
+        damage = Math.max(0, enemyDiceRoll * enemyAtkStat - character.def - character.defb);
+        damageFormula = `max(0, 적다이스(${enemyDiceRoll}) × 적공격력(${enemyAtkStat}) - 방어력(${character.def}) - 방어구(${character.defb})) = ${damage}`;
+      }
       newCharHp = Math.max(0, character.hp - damage);
     }
   }
@@ -112,6 +132,7 @@ export function calculateBattle(
     newCharHp,
     damage,
     character.debuff,
+    damageFormula,
   );
 
   return {

@@ -4,10 +4,10 @@ module.exports = {
   port: parseInt(process.env.PORT, 10) || 3000,
 
   /** 서버 버전 */
-  serverVersion: '0.4.1',
+  serverVersion: '0.5.0',
 
   /** 지원하는 최소 클라이언트 버전 */
-  minClientVersion: '0.4.1',
+  minClientVersion: '0.5.0',
 
   db: {
     host: process.env.DB_HOST || 'localhost',

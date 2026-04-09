@@ -61,6 +61,7 @@ export default function CharacterPage() {
           editor: undefined,
           formatter: () => '❌',
           cellClick: (_e: UIEvent, cell: CellComponent) => {
+            if (!confirm('캐릭터를 삭제하시겠습니까?')) return;
             const row = cell.getRow();
             const num = row.getData().num;
             const current = table.getData() as Character[];
@@ -146,6 +147,7 @@ export default function CharacterPage() {
           editor: undefined,
           formatter: () => '❌',
           cellClick: (_e: UIEvent, cell: CellComponent) => {
+            if (!confirm('적 캐릭터를 삭제하시겠습니까?')) return;
             const row = cell.getRow();
             const num = row.getData().num;
             const current = table.getData() as EnemyCharacter[];
@@ -421,7 +423,8 @@ export default function CharacterPage() {
           %캐이름% : 캐릭터 이름<br />
           %캐체력% : 캐릭터 체력<br />
           %캐다이스% : 캐릭터 다이스 숫자(디버프 포함)<br />
-          %데미지% : 적에게 입힌 피해 / 캐릭터가 받은 피해
+          %데미지% : 적에게 입힌 피해 / 캐릭터가 받은 피해<br />
+          %계산식% : 데미지 계산 과정
         </p>
         <p>
           <strong>조사 자동 처리</strong><br />
