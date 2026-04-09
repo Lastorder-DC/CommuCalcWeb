@@ -27,7 +27,7 @@ describe('storageService', () => {
     });
 
     it('stores and retrieves characters', () => {
-      const chars = [{ id: 1, num: 1, name: 'TestChar', atk: 10, def: 5, atkb: 1, defb: 2, debuff: '-1', hp: 50 }];
+      const chars = [{ id: 1, num: 1, name: 'TestChar', atk: 10, def: 5, atkb: 1, defb: 2, debuff: '-1', maxHp: 50, hp: 50 }];
       storageService.setCharacters(chars);
       expect(storageService.getCharacters()).toEqual(chars);
     });
@@ -40,7 +40,7 @@ describe('storageService', () => {
     });
 
     it('stores and retrieves enemy characters', () => {
-      const chars = [{ id: 1, num: 1, name: 'Enemy1', atk: 3, hp: 20 }];
+      const chars = [{ id: 1, num: 1, name: 'Enemy1', atk: 3, maxHp: 20, hp: 20 }];
       storageService.setEnemyCharacters(chars);
       expect(storageService.getEnemyCharacters()).toEqual(chars);
     });
@@ -109,8 +109,8 @@ describe('storageService', () => {
 
   describe('exportAll / importAll', () => {
     it('round-trips all data', () => {
-      storageService.setCharacters([{ id: 1, num: 1, name: 'A', atk: 1, def: 1, atkb: 0, defb: 0, debuff: '0', hp: 10 }]);
-      storageService.setEnemyCharacters([{ id: 1, num: 1, name: 'E', atk: 3, hp: 5 }]);
+      storageService.setCharacters([{ id: 1, num: 1, name: 'A', atk: 1, def: 1, atkb: 0, defb: 0, debuff: '0', maxHp: 10, hp: 10 }]);
+      storageService.setEnemyCharacters([{ id: 1, num: 1, name: 'E', atk: 3, maxHp: 5, hp: 5 }]);
       storageService.setMessageTemplate('atksuccess', 'custom');
       storageService.setEnemyName('Boss');
       storageService.setEnemyHp(99);

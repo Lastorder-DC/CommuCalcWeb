@@ -54,28 +54,44 @@ export default function CharacterPage() {
         { title: '무기', field: 'atkb', editor: 'input', width: 100 },
         { title: '방어구', field: 'defb', editor: 'input', width: 100 },
         { title: '디버프', field: 'debuff', editor: 'input', width: 100 },
-        { title: '체력', field: 'hp', editor: 'input', width: 100 },
+        { title: '최대체력', field: 'maxHp', editor: 'input', width: 100 },
+        { title: '현재체력', field: 'hp', editor: 'input', width: 100 },
         {
           title: '관리',
           field: 'manage',
           editor: undefined,
-          formatter: () => '❌',
+          formatter: () => '<span style="cursor:pointer" title="체력 회복">↻</span> <span style="cursor:pointer" title="삭제">❌</span>',
           cellClick: (_e: UIEvent, cell: CellComponent) => {
-            if (!confirm('캐릭터를 삭제하시겠습니까?')) return;
+            const target = _e.target as HTMLElement;
             const row = cell.getRow();
-            const num = row.getData().num;
-            const current = table.getData() as Character[];
-            let id = 1;
-            const filtered: Character[] = [];
-            for (const c of current) {
-              if (c.num === num) continue;
-              filtered.push({ ...c, id, num: id });
-              id++;
+            const data = row.getData() as Character;
+
+            if (target.textContent?.trim() === '↻') {
+              if (!confirm('체력을 최대체력으로 회복하시겠습니까?')) return;
+              const current = table.getData() as Character[];
+              const updated = current.map(c =>
+                c.num === data.num ? { ...c, hp: c.maxHp } : c
+              );
+              table.replaceData(updated);
+              updateChars(updated);
+              return;
             }
-            table.replaceData(filtered);
-            updateChars(filtered);
+
+            if (target.textContent?.trim() === '❌') {
+              if (!confirm('캐릭터를 삭제하시겠습니까?')) return;
+              const current = table.getData() as Character[];
+              let id = 1;
+              const filtered: Character[] = [];
+              for (const c of current) {
+                if (c.num === data.num) continue;
+                filtered.push({ ...c, id, num: id });
+                id++;
+              }
+              table.replaceData(filtered);
+              updateChars(filtered);
+            }
           },
-          width: 80,
+          width: 100,
         },
       ],
       langs: {
@@ -140,28 +156,44 @@ export default function CharacterPage() {
         { title: '번호', field: 'num', width: 80 },
         { title: '이름', field: 'name', editor: 'input', minWidth: 100 },
         { title: '공격력', field: 'atk', editor: 'input', width: 100 },
-        { title: '체력', field: 'hp', editor: 'input', width: 100 },
+        { title: '최대체력', field: 'maxHp', editor: 'input', width: 100 },
+        { title: '현재체력', field: 'hp', editor: 'input', width: 100 },
         {
           title: '관리',
           field: 'manage',
           editor: undefined,
-          formatter: () => '❌',
+          formatter: () => '<span style="cursor:pointer" title="체력 회복">↻</span> <span style="cursor:pointer" title="삭제">❌</span>',
           cellClick: (_e: UIEvent, cell: CellComponent) => {
-            if (!confirm('적 캐릭터를 삭제하시겠습니까?')) return;
+            const target = _e.target as HTMLElement;
             const row = cell.getRow();
-            const num = row.getData().num;
-            const current = table.getData() as EnemyCharacter[];
-            let id = 1;
-            const filtered: EnemyCharacter[] = [];
-            for (const c of current) {
-              if (c.num === num) continue;
-              filtered.push({ ...c, id, num: id });
-              id++;
+            const data = row.getData() as EnemyCharacter;
+
+            if (target.textContent?.trim() === '↻') {
+              if (!confirm('체력을 최대체력으로 회복하시겠습니까?')) return;
+              const current = table.getData() as EnemyCharacter[];
+              const updated = current.map(c =>
+                c.num === data.num ? { ...c, hp: c.maxHp } : c
+              );
+              table.replaceData(updated);
+              updateEnemyChars(updated);
+              return;
             }
-            table.replaceData(filtered);
-            updateEnemyChars(filtered);
+
+            if (target.textContent?.trim() === '❌') {
+              if (!confirm('적 캐릭터를 삭제하시겠습니까?')) return;
+              const current = table.getData() as EnemyCharacter[];
+              let id = 1;
+              const filtered: EnemyCharacter[] = [];
+              for (const c of current) {
+                if (c.num === data.num) continue;
+                filtered.push({ ...c, id, num: id });
+                id++;
+              }
+              table.replaceData(filtered);
+              updateEnemyChars(filtered);
+            }
           },
-          width: 80,
+          width: 100,
         },
       ],
       langs: {
@@ -217,6 +249,7 @@ export default function CharacterPage() {
       atkb: 0,
       defb: 0,
       debuff: '-0',
+      maxHp: 100,
       hp: 100,
     };
     const updated = [...current, newChar];
@@ -241,6 +274,7 @@ export default function CharacterPage() {
       num: newId,
       name: '여기에 이름 입력',
       atk: 2,
+      maxHp: 10,
       hp: 10,
     };
     const updated = [...current, newChar];

@@ -40,13 +40,13 @@ export const DEFAULT_TEMPLATES: MessageTemplates = {
 
 /** 기본 캐릭터 데이터 */
 export const DEFAULT_CHARACTERS: Character[] = [
-  { id: 1, num: 1, name: '캐릭터 이름 1', atk: 5, def: 5, atkb: 0, defb: 0, debuff: '-0', hp: 100 },
-  { id: 2, num: 2, name: '캐릭터 이름 2', atk: 5, def: 5, atkb: 0, defb: 0, debuff: '-0', hp: 100 },
+  { id: 1, num: 1, name: '캐릭터 이름 1', atk: 5, def: 5, atkb: 0, defb: 0, debuff: '-0', maxHp: 100, hp: 100 },
+  { id: 2, num: 2, name: '캐릭터 이름 2', atk: 5, def: 5, atkb: 0, defb: 0, debuff: '-0', maxHp: 100, hp: 100 },
 ];
 
 /** 기본 적 캐릭터 데이터 */
 export const DEFAULT_ENEMY_CHARACTERS: EnemyCharacter[] = [
-  { id: 1, num: 1, name: '적 1', atk: 2, hp: 10 },
+  { id: 1, num: 1, name: '적 1', atk: 2, maxHp: 10, hp: 10 },
 ];
 
 /**

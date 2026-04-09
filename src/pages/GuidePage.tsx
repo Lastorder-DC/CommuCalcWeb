@@ -160,7 +160,12 @@ export default function GuidePage() {
                   <td>음수일수록 성공 확률 감소 (다이스에 가산)</td>
                 </tr>
                 <tr>
-                  <td><strong>체력 (hp)</strong></td>
+                  <td><strong>최대체력 (maxHp)</strong></td>
+                  <td>캐릭터가 가질 수 있는 최대 체력</td>
+                  <td>체력 회복(↻) 시 이 값으로 복구</td>
+                </tr>
+                <tr>
+                  <td><strong>현재체력 (hp)</strong></td>
                   <td>피해를 받을 때 감소</td>
                   <td>0이 되면 사망, 행동 불가</td>
                 </tr>

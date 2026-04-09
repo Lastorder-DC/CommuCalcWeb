@@ -18,6 +18,7 @@ export default function CalcPage() {
   const [enemyAtk, setEnemyAtk] = useState(2);
   const [battleMode, setBattleMode] = useState<BattleMode>('atk');
   const [currentCharHp, setCurrentCharHp] = useState(0);
+  const [charMaxHp, setCharMaxHp] = useState(0);
   const [currentEnemyHp, setCurrentEnemyHp] = useState<number | ''>('');
   const [debuff, setDebuff] = useState('0');
   const [success, setSuccess] = useState<'ok' | 'failed'>('ok');
@@ -58,11 +59,13 @@ export default function CalcPage() {
       const char = chars.find(c => String(c.num) === savedChar);
       if (char) {
         setCurrentCharHp(char.hp);
+        setCharMaxHp(char.maxHp);
         setDebuff(String(parseInt(char.debuff, 10)));
       }
     } else if (chars.length > 0) {
       setSelectedChar(String(chars[0].num));
       setCurrentCharHp(chars[0].hp);
+      setCharMaxHp(chars[0].maxHp);
       setDebuff(String(parseInt(chars[0].debuff, 10)));
     }
 
@@ -86,22 +89,22 @@ export default function CalcPage() {
       const enemy = characters.find(c => String(c.num) === selectedEnemy);
       if (enemy) {
         setEnemyName(enemy.name);
-        setEnemyHp(enemy.hp);
+        setEnemyHp(enemy.maxHp);
         setEnemyAtk(enemy.atk + enemy.atkb);
         setCurrentEnemyHp(enemy.hp);
         storageService.setEnemyName(enemy.name);
-        storageService.setEnemyHp(enemy.hp);
+        storageService.setEnemyHp(enemy.maxHp);
         storageService.setEnemyAtk(enemy.atk + enemy.atkb);
       }
     } else {
       const enemy = enemyCharacters.find(c => String(c.num) === selectedEnemy);
       if (enemy) {
         setEnemyName(enemy.name);
-        setEnemyHp(enemy.hp);
+        setEnemyHp(enemy.maxHp);
         setEnemyAtk(enemy.atk);
         setCurrentEnemyHp(enemy.hp);
         storageService.setEnemyName(enemy.name);
-        storageService.setEnemyHp(enemy.hp);
+        storageService.setEnemyHp(enemy.maxHp);
         storageService.setEnemyAtk(enemy.atk);
       }
     }
@@ -113,6 +116,7 @@ export default function CalcPage() {
     const char = characters.find(c => String(c.num) === value);
     if (char) {
       setCurrentCharHp(char.hp);
+      setCharMaxHp(char.maxHp);
       setDebuff(String(parseInt(char.debuff, 10)));
     }
   }, [characters]);
@@ -279,7 +283,7 @@ export default function CalcPage() {
           />
         </div>
         <div className="col-md-2">
-          <label htmlFor="enemyhp" className="form-label">적 체력</label>
+          <label htmlFor="enemyhp" className="form-label">적 최대체력</label>
           <input
             id="enemyhp"
             name="enemyhp"
@@ -301,7 +305,7 @@ export default function CalcPage() {
           />
         </div>
         <div className="col-md-2">
-          <label htmlFor="curhp" className="form-label">현재 캐릭터 체력</label>
+          <label htmlFor="curhp" className="form-label">캐릭터 체력 (최대: {charMaxHp})</label>
           <input
             id="curhp"
             name="curhp"

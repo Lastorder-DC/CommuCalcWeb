@@ -44,7 +44,7 @@ describe('replaceValue', () => {
 
 describe('calculateBattle', () => {
   const baseChar: Character = {
-    id: 1, num: 1, name: '테스트', atk: 5, def: 5, atkb: 0, defb: 0, debuff: '0', hp: 100,
+    id: 1, num: 1, name: '테스트', atk: 5, def: 5, atkb: 0, defb: 0, debuff: '0', maxHp: 100, hp: 100,
   };
 
   const templates: MessageTemplates = {
@@ -159,7 +159,7 @@ describe('calculateBattle', () => {
       callCount++;
       return callCount === 1 ? 0.99 : 0; // enemy=6, char=1
     });
-    const lowHpChar = { ...baseChar, hp: 1, def: 0 };
+    const lowHpChar = { ...baseChar, hp: 1, maxHp: 100, def: 0 };
     const result = calculateBattle(lowHpChar, 'atk', 'pve', '적', 5, 100, templates);
     expect(result.success).toBe(false);
     expect(result.newCharHp).toBe(0);
