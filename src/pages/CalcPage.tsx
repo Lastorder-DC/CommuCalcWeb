@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { storageService } from '../services/storageService';
 import { calculateBattle } from '../services/battleService';
-import type { Character, EnemyCharacter, BattleMode, BattleType, DamageFormulaType } from '../types';
+import { validateFormula, FORMULA_VARIABLES } from '../services/formulaService';
+import type { Character, EnemyCharacter, BattleMode, BattleType, DamageFormulaType, BattleLogEntry } from '../types';
 import CharacterComboBox from '../components/CharacterComboBox';
 
 export default function CalcPage() {
@@ -13,6 +14,8 @@ export default function CalcPage() {
   const [battleType, setBattleType] = useState<BattleType>('pve');
   const [pvpDamageFormula, setPvpDamageFormula] = useState<DamageFormulaType>('add');
   const [pveDamageFormula, setPveDamageFormula] = useState<DamageFormulaType>('add');
+  const [pvpCustomFormula, setPvpCustomFormula] = useState('');
+  const [pveCustomFormula, setPveCustomFormula] = useState('');
   const [selectedChar, setSelectedChar] = useState('');
   const [selectedEnemy, setSelectedEnemy] = useState('');
   const [enemyName, setEnemyName] = useState('');
@@ -25,6 +28,14 @@ export default function CalcPage() {
   const [debuff, setDebuff] = useState('0');
   const [success, setSuccess] = useState<'ok' | 'failed'>('ok');
   const [resultText, setResultText] = useState('');
+
+  // 커스텀 수식 모달 관련
+  const [showFormulaModal, setShowFormulaModal] = useState(false);
+  const [editingFormula, setEditingFormula] = useState('');
+  const [formulaError, setFormulaError] = useState<string | null>(null);
+
+  // 전투 기록
+  const [battleLog, setBattleLog] = useState<BattleLogEntry[]>([]);
 
   // 아군 캐릭터 콤보박스 옵션
   const charOptions = useMemo(() =>
@@ -55,6 +66,9 @@ export default function CalcPage() {
     setBattleMode(storageService.getBattleMode());
     setPvpDamageFormula(storageService.getPvpDamageFormula());
     setPveDamageFormula(storageService.getPveDamageFormula());
+    setPvpCustomFormula(storageService.getPvpCustomFormula());
+    setPveCustomFormula(storageService.getPveCustomFormula());
+    setBattleLog(storageService.getBattleLog());
 
     // 아군 캐릭터 복원
     const savedChar = storageService.getSelectedChar();
@@ -144,6 +158,14 @@ export default function CalcPage() {
   }, []);
 
   const handleDamageFormulaChange = useCallback((value: DamageFormulaType) => {
+    if (value === 'custom') {
+      // 커스텀 수식 모달 열기
+      const currentCustom = battleType === 'pvp' ? pvpCustomFormula : pveCustomFormula;
+      setEditingFormula(currentCustom);
+      setFormulaError(null);
+      setShowFormulaModal(true);
+      return;
+    }
     if (battleType === 'pvp') {
       setPvpDamageFormula(value);
       storageService.setPvpDamageFormula(value);
@@ -151,7 +173,27 @@ export default function CalcPage() {
       setPveDamageFormula(value);
       storageService.setPveDamageFormula(value);
     }
-  }, [battleType]);
+  }, [battleType, pvpCustomFormula, pveCustomFormula]);
+
+  const handleCustomFormulaSave = useCallback(() => {
+    const error = validateFormula(editingFormula);
+    if (error) {
+      setFormulaError(error);
+      return;
+    }
+    if (battleType === 'pvp') {
+      setPvpDamageFormula('custom');
+      setPvpCustomFormula(editingFormula);
+      storageService.setPvpDamageFormula('custom');
+      storageService.setPvpCustomFormula(editingFormula);
+    } else {
+      setPveDamageFormula('custom');
+      setPveCustomFormula(editingFormula);
+      storageService.setPveDamageFormula('custom');
+      storageService.setPveCustomFormula(editingFormula);
+    }
+    setShowFormulaModal(false);
+  }, [editingFormula, battleType]);
 
   const doCalc = useCallback(() => {
     const curChar = characters.find(c => String(c.num) === selectedChar);
@@ -176,6 +218,7 @@ export default function CalcPage() {
     }
     const templates = storageService.getMessageTemplates();
     const currentFormula = battleType === 'pvp' ? pvpDamageFormula : pveDamageFormula;
+    const currentCustom = battleType === 'pvp' ? pvpCustomFormula : pveCustomFormula;
 
     const result = calculateBattle(
       curChar,
@@ -185,12 +228,30 @@ export default function CalcPage() {
       enemyAtk,
       actualEnemyHp,
       templates,
+      currentCustom,
     );
 
     setSuccess(result.success ? 'ok' : 'failed');
     setResultText(result.message);
     setCurrentCharHp(result.newCharHp);
     setCurrentEnemyHp(result.newEnemyHp);
+
+    // 전투 기록 추가
+    const logEntry: BattleLogEntry = {
+      timestamp: new Date().toISOString(),
+      battleType,
+      battleMode,
+      charName: curChar.name,
+      enemyName,
+      success: result.success,
+      damage: result.damage,
+      charDice: result.charDice,
+      enemyDice: result.enemyDice,
+      message: result.message,
+    };
+    const newLog = [...battleLog, logEntry];
+    setBattleLog(newLog);
+    storageService.addBattleLogEntry(logEntry);
 
     if (result.newEnemyHp <= 0 && battleMode === 'atk' && result.success) {
       alert('적이 쓰러졌습니다!');
@@ -222,7 +283,15 @@ export default function CalcPage() {
       setEnemyCharacters(updated);
       storageService.setEnemyCharacters(updated);
     }
-  }, [characters, enemyCharacters, selectedChar, selectedEnemy, currentEnemyHp, enemyHp, battleMode, battleType, pvpDamageFormula, pveDamageFormula, enemyName, enemyAtk]);
+  }, [characters, enemyCharacters, selectedChar, selectedEnemy, currentEnemyHp, enemyHp, battleMode, battleType, pvpDamageFormula, pveDamageFormula, pvpCustomFormula, pveCustomFormula, enemyName, enemyAtk, battleLog]);
+
+  const handleClearBattleLog = useCallback(() => {
+    if (!confirm('전투 기록을 모두 삭제하시겠습니까?')) return;
+    setBattleLog([]);
+    storageService.clearBattleLog();
+  }, []);
+
+  const currentFormulaValue = battleType === 'pvp' ? pvpDamageFormula : pveDamageFormula;
 
   return (
     <>
@@ -247,12 +316,27 @@ export default function CalcPage() {
             id="damageFormula"
             name="damageFormula"
             className="form-select"
-            value={battleType === 'pvp' ? pvpDamageFormula : pveDamageFormula}
+            value={currentFormulaValue}
             onChange={e => handleDamageFormulaChange(e.target.value as DamageFormulaType)}
           >
             <option value="add">합산 (적공격력 + 적다이스)</option>
             <option value="multiply">곱셈 (적다이스 × 적공격력)</option>
+            <option value="custom">커스텀 수식</option>
           </select>
+          {currentFormulaValue === 'custom' && (
+            <button
+              type="button"
+              className="btn btn-outline-secondary btn-sm mt-1"
+              onClick={() => {
+                const currentCustom = battleType === 'pvp' ? pvpCustomFormula : pveCustomFormula;
+                setEditingFormula(currentCustom);
+                setFormulaError(null);
+                setShowFormulaModal(true);
+              }}
+            >
+              수식 편집
+            </button>
+          )}
         </div>
         <div className="col-md-2">
           <label htmlFor="charname" className="form-label">캐릭터 이름</label>
@@ -395,6 +479,144 @@ export default function CalcPage() {
           />
         </div>
       </div>
+
+      {/* 전투 기록 */}
+      <div className="row" style={{ paddingTop: '20px' }}>
+        <div className="col-12">
+          <div className="d-flex justify-content-between align-items-center mb-2">
+            <h3>전투 기록</h3>
+            {battleLog.length > 0 && (
+              <button
+                type="button"
+                className="btn btn-outline-danger btn-sm"
+                onClick={handleClearBattleLog}
+              >
+                기록 초기화
+              </button>
+            )}
+          </div>
+          {battleLog.length === 0 ? (
+            <p className="text-muted">전투 기록이 없습니다.</p>
+          ) : (
+            <div className="table-responsive" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+              <table className="table table-sm table-striped">
+                <thead className="sticky-top">
+                  <tr>
+                    <th>#</th>
+                    <th>시간</th>
+                    <th>타입</th>
+                    <th>모드</th>
+                    <th>캐릭터</th>
+                    <th>적</th>
+                    <th>결과</th>
+                    <th>데미지</th>
+                    <th>다이스 (캐/적)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {battleLog.map((entry, i) => (
+                    <tr key={i}>
+                      <td>{i + 1}</td>
+                      <td>{new Date(entry.timestamp).toLocaleTimeString('ko-KR')}</td>
+                      <td>{entry.battleType === 'pvp' ? 'PvP' : 'PvE'}</td>
+                      <td>{entry.battleMode === 'atk' ? '공격' : '방어'}</td>
+                      <td>{entry.charName}</td>
+                      <td>{entry.enemyName}</td>
+                      <td className={entry.success ? 'text-success' : 'text-danger'}>
+                        {entry.success ? '성공' : '실패'}
+                      </td>
+                      <td>{entry.damage}</td>
+                      <td>{entry.charDice} / {entry.enemyDice}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 커스텀 수식 모달 */}
+      {showFormulaModal && (
+        <div className="modal d-block" tabIndex={-1} style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+          <div className="modal-dialog modal-lg">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h5 className="modal-title">커스텀 데미지 수식 설정</h5>
+                <button type="button" className="btn-close" onClick={() => setShowFormulaModal(false)}></button>
+              </div>
+              <div className="modal-body">
+                <div className="mb-3">
+                  <label htmlFor="customFormula" className="form-label">데미지 수식</label>
+                  <input
+                    id="customFormula"
+                    type="text"
+                    className={`form-control ${formulaError ? 'is-invalid' : ''}`}
+                    value={editingFormula}
+                    onChange={e => {
+                      setEditingFormula(e.target.value);
+                      setFormulaError(null);
+                    }}
+                    placeholder="예: 적공격력 + 적다이스 - 방어력 - 방어구"
+                  />
+                  {formulaError && (
+                    <div className="invalid-feedback">{formulaError}</div>
+                  )}
+                  <div className="form-text">
+                    결과값이 0 미만이면 자동으로 0으로 처리됩니다.
+                  </div>
+                </div>
+
+                <h6>사용 가능한 변수</h6>
+                <table className="table table-sm table-bordered">
+                  <thead>
+                    <tr><th>변수명</th><th>설명</th></tr>
+                  </thead>
+                  <tbody>
+                    {FORMULA_VARIABLES.map(v => (
+                      <tr key={v.name}>
+                        <td><code>{v.name}</code></td>
+                        <td>{v.description}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <h6>사용 가능한 연산자 및 함수</h6>
+                <table className="table table-sm table-bordered">
+                  <thead>
+                    <tr><th>항목</th><th>설명</th></tr>
+                  </thead>
+                  <tbody>
+                    <tr><td><code>+</code></td><td>덧셈</td></tr>
+                    <tr><td><code>-</code></td><td>뺄셈</td></tr>
+                    <tr><td><code>*</code></td><td>곱셈</td></tr>
+                    <tr><td><code>/</code></td><td>나눗셈</td></tr>
+                    <tr><td><code>( )</code></td><td>괄호 (우선순위 지정)</td></tr>
+                    <tr><td><code>max(a, b)</code></td><td>두 값 중 큰 값</td></tr>
+                    <tr><td><code>min(a, b)</code></td><td>두 값 중 작은 값</td></tr>
+                  </tbody>
+                </table>
+
+                <h6>예시</h6>
+                <ul>
+                  <li><code>적공격력 + 적다이스 - 방어력 - 방어구</code> — 합산 계산식</li>
+                  <li><code>적다이스 * 적공격력 - 방어력 - 방어구</code> — 곱셈 계산식</li>
+                  <li><code>max(적공격력, 적다이스) * 2 - 방어력</code> — 커스텀 예시</li>
+                </ul>
+              </div>
+              <div className="modal-footer">
+                <button type="button" className="btn btn-secondary" onClick={() => setShowFormulaModal(false)}>
+                  취소
+                </button>
+                <button type="button" className="btn btn-primary" onClick={handleCustomFormulaSave}>
+                  저장
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
