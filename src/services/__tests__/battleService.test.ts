@@ -55,7 +55,7 @@ describe('calculateBattle', () => {
   };
 
   it('returns valid battle result structure', () => {
-    const result = calculateBattle(baseChar, 'atk', 'pve', '적', 2, 10, templates);
+    const result = calculateBattle(baseChar, 'atk', 'multiply', '적', 2, 10, templates);
     expect(result).toHaveProperty('success');
     expect(result).toHaveProperty('message');
     expect(result).toHaveProperty('damage');
@@ -68,7 +68,7 @@ describe('calculateBattle', () => {
   it('reduces enemy HP on attack success', () => {
     // Force dice to make success guaranteed
     vi.spyOn(Math, 'random').mockReturnValue(0.99); // dice = 6 for both
-    const result = calculateBattle(baseChar, 'atk', 'pve', '적', 2, 10, templates);
+    const result = calculateBattle(baseChar, 'atk', 'multiply', '적', 2, 10, templates);
     // With debuff 0, charDice=6 >= enemyDice=6 → success
     expect(result.success).toBe(true);
     expect(result.damage).toBe(5); // atk + atkb = 5 + 0
@@ -77,45 +77,45 @@ describe('calculateBattle', () => {
     vi.restoreAllMocks();
   });
 
-  it('reduces char HP on attack failure (PvE)', () => {
+  it('reduces char HP on attack failure (multiply formula)', () => {
     // charDice=1, enemyDice=6 → fail
     let callCount = 0;
     vi.spyOn(Math, 'random').mockImplementation(() => {
       callCount++;
       return callCount === 1 ? 0.99 : 0; // enemy=6, char=1
     });
-    const result = calculateBattle(baseChar, 'atk', 'pve', '적', 2, 10, templates);
+    const result = calculateBattle(baseChar, 'atk', 'multiply', '적', 2, 10, templates);
     expect(result.success).toBe(false);
-    // PvE: damage = max(0, 6*2 - 5 - 0) = 7
+    // multiply: damage = max(0, 6*2 - 5 - 0) = 7
     expect(result.damage).toBe(7);
     expect(result.newCharHp).toBe(93); // 100 - 7
     expect(result.newEnemyHp).toBe(10); // unchanged
     vi.restoreAllMocks();
   });
 
-  it('uses PvP formula (addition instead of multiplication) on attack failure', () => {
+  it('uses add formula (addition instead of multiplication) on attack failure', () => {
     let callCount = 0;
     vi.spyOn(Math, 'random').mockImplementation(() => {
       callCount++;
       return callCount === 1 ? 0.99 : 0; // enemy=6, char=1
     });
-    const result = calculateBattle(baseChar, 'atk', 'pvp', '적', 5, 100, templates);
+    const result = calculateBattle(baseChar, 'atk', 'add', '적', 5, 100, templates);
     expect(result.success).toBe(false);
-    // PvP: damage = max(0, 5 + 6 - 5 - 0) = 6
+    // add: damage = max(0, 5 + 6 - 5 - 0) = 6
     expect(result.damage).toBe(6);
     expect(result.newCharHp).toBe(94); // 100 - 6
     vi.restoreAllMocks();
   });
 
-  it('PvE attack failure uses multiplication formula', () => {
+  it('multiply formula attack failure uses multiplication', () => {
     let callCount = 0;
     vi.spyOn(Math, 'random').mockImplementation(() => {
       callCount++;
       return callCount === 1 ? 0.99 : 0; // enemy=6, char=1
     });
-    const result = calculateBattle(baseChar, 'atk', 'pve', '적', 5, 100, templates);
+    const result = calculateBattle(baseChar, 'atk', 'multiply', '적', 5, 100, templates);
     expect(result.success).toBe(false);
-    // PvE: damage = max(0, 6*5 - 5 - 0) = 25
+    // multiply: damage = max(0, 6*5 - 5 - 0) = 25
     expect(result.damage).toBe(25);
     expect(result.newCharHp).toBe(75); // 100 - 25
     vi.restoreAllMocks();
@@ -123,22 +123,22 @@ describe('calculateBattle', () => {
 
   it('defense success deals no damage', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.99); // both dice = 6
-    const result = calculateBattle(baseChar, 'def', 'pve', '적', 2, 10, templates);
+    const result = calculateBattle(baseChar, 'def', 'add', '적', 2, 10, templates);
     expect(result.success).toBe(true);
     expect(result.damage).toBe(0);
     expect(result.newCharHp).toBe(100);
     vi.restoreAllMocks();
   });
 
-  it('defense failure reduces char HP (PvP formula)', () => {
+  it('defense failure reduces char HP (add formula)', () => {
     let callCount = 0;
     vi.spyOn(Math, 'random').mockImplementation(() => {
       callCount++;
       return callCount === 1 ? 0.99 : 0; // enemy=6, char=1
     });
-    const result = calculateBattle(baseChar, 'def', 'pvp', '적', 5, 100, templates);
+    const result = calculateBattle(baseChar, 'def', 'add', '적', 5, 100, templates);
     expect(result.success).toBe(false);
-    // PvP: damage = max(0, 5 + 6 - 5 - 0) = 6
+    // add: damage = max(0, 5 + 6 - 5 - 0) = 6
     expect(result.damage).toBe(6);
     expect(result.newCharHp).toBe(94);
     vi.restoreAllMocks();
@@ -147,7 +147,7 @@ describe('calculateBattle', () => {
   it('clamps enemy HP to 0 minimum', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.99);
     const bigAtkChar = { ...baseChar, atk: 50 };
-    const result = calculateBattle(bigAtkChar, 'atk', 'pve', '적', 2, 10, templates);
+    const result = calculateBattle(bigAtkChar, 'atk', 'add', '적', 2, 10, templates);
     expect(result.success).toBe(true);
     expect(result.newEnemyHp).toBe(0);
     vi.restoreAllMocks();
@@ -160,7 +160,7 @@ describe('calculateBattle', () => {
       return callCount === 1 ? 0.99 : 0; // enemy=6, char=1
     });
     const lowHpChar = { ...baseChar, hp: 1, maxHp: 100, def: 0 };
-    const result = calculateBattle(lowHpChar, 'atk', 'pve', '적', 5, 100, templates);
+    const result = calculateBattle(lowHpChar, 'atk', 'multiply', '적', 5, 100, templates);
     expect(result.success).toBe(false);
     expect(result.newCharHp).toBe(0);
     vi.restoreAllMocks();
@@ -168,7 +168,7 @@ describe('calculateBattle', () => {
 
   it('includes damageFormula in message', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.99);
-    const result = calculateBattle(baseChar, 'atk', 'pve', '적', 2, 10, templates);
+    const result = calculateBattle(baseChar, 'atk', 'add', '적', 2, 10, templates);
     expect(result.message).toContain('공격력(5) + 무기(0) = 5');
     vi.restoreAllMocks();
   });

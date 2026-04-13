@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { storageService } from '../services/storageService';
 import { calculateBattle } from '../services/battleService';
-import type { Character, EnemyCharacter, BattleMode, BattleType } from '../types';
+import type { Character, EnemyCharacter, BattleMode, BattleType, DamageFormulaType } from '../types';
 import CharacterComboBox from '../components/CharacterComboBox';
 
 export default function CalcPage() {
@@ -11,6 +11,8 @@ export default function CalcPage() {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [enemyCharacters, setEnemyCharacters] = useState<EnemyCharacter[]>([]);
   const [battleType, setBattleType] = useState<BattleType>('pve');
+  const [pvpDamageFormula, setPvpDamageFormula] = useState<DamageFormulaType>('add');
+  const [pveDamageFormula, setPveDamageFormula] = useState<DamageFormulaType>('add');
   const [selectedChar, setSelectedChar] = useState('');
   const [selectedEnemy, setSelectedEnemy] = useState('');
   const [enemyName, setEnemyName] = useState('');
@@ -51,6 +53,8 @@ export default function CalcPage() {
     const savedBattleType = storageService.getBattleType();
     setBattleType(savedBattleType);
     setBattleMode(storageService.getBattleMode());
+    setPvpDamageFormula(storageService.getPvpDamageFormula());
+    setPveDamageFormula(storageService.getPveDamageFormula());
 
     // 아군 캐릭터 복원
     const savedChar = storageService.getSelectedChar();
@@ -139,6 +143,16 @@ export default function CalcPage() {
     storageService.setBattleMode(value);
   }, []);
 
+  const handleDamageFormulaChange = useCallback((value: DamageFormulaType) => {
+    if (battleType === 'pvp') {
+      setPvpDamageFormula(value);
+      storageService.setPvpDamageFormula(value);
+    } else {
+      setPveDamageFormula(value);
+      storageService.setPveDamageFormula(value);
+    }
+  }, [battleType]);
+
   const doCalc = useCallback(() => {
     const curChar = characters.find(c => String(c.num) === selectedChar);
     if (!curChar) {
@@ -161,11 +175,12 @@ export default function CalcPage() {
       return;
     }
     const templates = storageService.getMessageTemplates();
+    const currentFormula = battleType === 'pvp' ? pvpDamageFormula : pveDamageFormula;
 
     const result = calculateBattle(
       curChar,
       battleMode,
-      battleType,
+      currentFormula,
       enemyName,
       enemyAtk,
       actualEnemyHp,
@@ -207,7 +222,7 @@ export default function CalcPage() {
       setEnemyCharacters(updated);
       storageService.setEnemyCharacters(updated);
     }
-  }, [characters, enemyCharacters, selectedChar, selectedEnemy, currentEnemyHp, enemyHp, battleMode, battleType, enemyName, enemyAtk]);
+  }, [characters, enemyCharacters, selectedChar, selectedEnemy, currentEnemyHp, enemyHp, battleMode, battleType, pvpDamageFormula, pveDamageFormula, enemyName, enemyAtk]);
 
   return (
     <>
@@ -224,6 +239,19 @@ export default function CalcPage() {
           >
             <option value="pve">PvE (아군 vs 적군)</option>
             <option value="pvp">PvP (아군 vs 아군)</option>
+          </select>
+        </div>
+        <div className="col-md-2">
+          <label htmlFor="damageFormula" className="form-label">계산식</label>
+          <select
+            id="damageFormula"
+            name="damageFormula"
+            className="form-select"
+            value={battleType === 'pvp' ? pvpDamageFormula : pveDamageFormula}
+            onChange={e => handleDamageFormulaChange(e.target.value as DamageFormulaType)}
+          >
+            <option value="add">합산 (적공격력 + 적다이스)</option>
+            <option value="multiply">곱셈 (적다이스 × 적공격력)</option>
           </select>
         </div>
         <div className="col-md-2">
