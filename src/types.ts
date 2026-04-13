@@ -34,6 +34,9 @@ export type BattleMode = 'atk' | 'def';
 /** 전투 타입 (PvE: 아군 vs 적군, PvP: 아군 vs 아군) */
 export type BattleType = 'pve' | 'pvp';
 
+/** 데미지 계산식 타입 */
+export type DamageFormulaType = 'add' | 'multiply';
+
 /** 전투 결과 */
 export interface BattleResult {
   success: boolean;
@@ -58,6 +61,8 @@ export interface SaveData {
   enemyName: string;
   enemyHp: number;
   enemyAtk: number;
+  pvpDamageFormula?: DamageFormulaType;
+  pveDamageFormula?: DamageFormulaType;
 }
 
 /** API 로그인 요청 */

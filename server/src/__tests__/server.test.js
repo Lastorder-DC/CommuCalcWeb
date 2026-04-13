@@ -39,7 +39,7 @@ describe('GET /legal/privacy', () => {
     const res = await request(app).get('/legal/privacy');
     expect(res.status).toBe(200);
     expect(res.text).toContain('개인정보 처리방침');
-    expect(res.text).toContain('수집하는 개인정보');
+    expect(res.text).toContain('처리하는 개인정보');
   });
 });
 
