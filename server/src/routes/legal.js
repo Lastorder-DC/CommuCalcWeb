@@ -2,9 +2,8 @@ const { Router } = require('express');
 
 const router = Router();
 
-const TERMS_OF_SERVICE = `# 이용약관
+const TERMS_OF_SERVICE = `**최종 수정일:** 2026년 4월 13일
 
-**최종 수정일:** 2026년 4월 13일
 **시행일:** 2026년 4월 13일
 
 ---
@@ -112,9 +111,8 @@ const TERMS_OF_SERVICE = `# 이용약관
 본 약관은 2025년 4월 1일부터 시행합니다.
 `;
 
-const PRIVACY_POLICY = `# 개인정보 처리방침
+const PRIVACY_POLICY = `**최종 수정일:** 2026년 4월 13일
 
-**최종 수정일:** 2026년 4월 13일
 **시행일:** 2026년 4월 13일
 
 ---
