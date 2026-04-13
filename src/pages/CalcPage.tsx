@@ -3,11 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import { storageService } from '../services/storageService';
 import { calculateBattle } from '../services/battleService';
 import { validateFormula, FORMULA_VARIABLES } from '../services/formulaService';
+import { useDataSync } from '../hooks/useDataSync';
 import type { Character, EnemyCharacter, BattleMode, BattleType, DamageFormulaType, BattleLogEntry } from '../types';
 import CharacterComboBox from '../components/CharacterComboBox';
 
 export default function CalcPage() {
   const navigate = useNavigate();
+  const { syncCategoryToServer, syncCategoryFromServer, canSync } = useDataSync();
+  const [syncing, setSyncing] = useState(false);
 
   const [characters, setCharacters] = useState<Character[]>([]);
   const [enemyCharacters, setEnemyCharacters] = useState<EnemyCharacter[]>([]);
@@ -326,7 +329,7 @@ export default function CalcPage() {
           {currentFormulaValue === 'custom' && (
             <button
               type="button"
-              className="btn btn-outline-secondary btn-sm mt-1"
+              className="btn btn-outline-secondary btn-sm mt-1 me-1"
               onClick={() => {
                 const currentCustom = battleType === 'pvp' ? pvpCustomFormula : pveCustomFormula;
                 setEditingFormula(currentCustom);
@@ -336,6 +339,54 @@ export default function CalcPage() {
             >
               수식 편집
             </button>
+          )}
+          {canSync && (
+            <>
+              <button
+                type="button"
+                className="btn btn-outline-info btn-sm mt-1 me-1"
+                disabled={syncing}
+                onClick={async () => {
+                  setSyncing(true);
+                  try {
+                    await syncCategoryToServer('formulaSettings');
+                    alert('데미지 수식 설정을 서버에 저장했습니다.');
+                  } catch {
+                    alert('데미지 수식 설정 서버 저장에 실패했습니다.');
+                  } finally {
+                    setSyncing(false);
+                  }
+                }}
+              >
+                수식 저장
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-success btn-sm mt-1"
+                disabled={syncing}
+                onClick={async () => {
+                  setSyncing(true);
+                  try {
+                    const loaded = await syncCategoryFromServer('formulaSettings');
+                    if (loaded) {
+                      setPvpDamageFormula(storageService.getPvpDamageFormula());
+                      setPveDamageFormula(storageService.getPveDamageFormula());
+                      setPvpCustomFormula(storageService.getPvpCustomFormula());
+                      setPveCustomFormula(storageService.getPveCustomFormula());
+                      alert('서버에서 데미지 수식 설정을 불러왔습니다.');
+                    } else {
+                      alert('서버에 저장된 수식 설정이 없습니다.');
+                    }
+                  } catch {
+                    alert('서버에서 수식 설정 불러오기에 실패했습니다.');
+                  } finally {
+                    setSyncing(false);
+                  }
+                }}
+              >
+                수식 불러오기
+              </button>
+            </>
           )}
         </div>
         <div className="col-md-2">
@@ -485,15 +536,62 @@ export default function CalcPage() {
         <div className="col-12">
           <div className="d-flex justify-content-between align-items-center mb-2">
             <h3>전투 기록</h3>
-            {battleLog.length > 0 && (
-              <button
-                type="button"
-                className="btn btn-outline-danger btn-sm"
-                onClick={handleClearBattleLog}
-              >
-                기록 초기화
-              </button>
-            )}
+            <div>
+              {canSync && (
+                <>
+                  <button
+                    type="button"
+                    className="btn btn-outline-info btn-sm me-2"
+                    disabled={syncing}
+                    onClick={async () => {
+                      setSyncing(true);
+                      try {
+                        await syncCategoryToServer('battleLog');
+                        alert('전투 기록을 서버에 저장했습니다.');
+                      } catch {
+                        alert('전투 기록 서버 저장에 실패했습니다.');
+                      } finally {
+                        setSyncing(false);
+                      }
+                    }}
+                  >
+                    서버에 저장
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-outline-success btn-sm me-2"
+                    disabled={syncing}
+                    onClick={async () => {
+                      setSyncing(true);
+                      try {
+                        const loaded = await syncCategoryFromServer('battleLog');
+                        if (loaded) {
+                          setBattleLog(storageService.getBattleLog());
+                          alert('서버에서 전투 기록을 불러왔습니다.');
+                        } else {
+                          alert('서버에 저장된 전투 기록이 없습니다.');
+                        }
+                      } catch {
+                        alert('서버에서 전투 기록 불러오기에 실패했습니다.');
+                      } finally {
+                        setSyncing(false);
+                      }
+                    }}
+                  >
+                    서버에서 불러오기
+                  </button>
+                </>
+              )}
+              {battleLog.length > 0 && (
+                <button
+                  type="button"
+                  className="btn btn-outline-danger btn-sm"
+                  onClick={handleClearBattleLog}
+                >
+                  기록 초기화
+                </button>
+              )}
+            </div>
           </div>
           {battleLog.length === 0 ? (
             <p className="text-muted">전투 기록이 없습니다.</p>
