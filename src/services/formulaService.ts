@@ -310,7 +310,9 @@ export function formatFormulaStr(
   result: number,
 ): string {
   let str = formula;
-  // 긴 변수명부터 플레이스홀더로 치환하여 부분 문자열 충돌 방지
+  // 긴 변수명부터 null byte 플레이스홀더로 치환하여 부분 문자열 충돌 방지
+  // (예: '적공격력' → '\x000\x00' 먼저, 이후 '공격력' → '\x004\x00' 처리)
+  // null byte는 수식 문자열에 등장하지 않으므로 안전한 구분자로 사용
   const sortedEntries = Object.entries(variables).sort((a, b) => b[0].length - a[0].length);
   const placeholders: [string, string][] = [];
   for (let i = 0; i < sortedEntries.length; i++) {

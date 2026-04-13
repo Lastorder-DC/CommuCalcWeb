@@ -239,7 +239,7 @@ export default function CalcPage() {
     setCurrentCharHp(result.newCharHp);
     setCurrentEnemyHp(result.newEnemyHp);
 
-    // 전투 기록 추가
+    // 전투 기록 추가 (functional update to avoid battleLog dependency)
     const logEntry: BattleLogEntry = {
       timestamp: new Date().toISOString(),
       battleType,
@@ -252,8 +252,7 @@ export default function CalcPage() {
       enemyDice: result.enemyDice,
       message: result.message,
     };
-    const newLog = [...battleLog, logEntry];
-    setBattleLog(newLog);
+    setBattleLog(prev => [...prev, logEntry]);
     storageService.addBattleLogEntry(logEntry);
 
     if (result.newEnemyHp <= 0 && battleMode === 'atk' && result.success) {
@@ -286,7 +285,7 @@ export default function CalcPage() {
       setEnemyCharacters(updated);
       storageService.setEnemyCharacters(updated);
     }
-  }, [characters, enemyCharacters, selectedChar, selectedEnemy, currentEnemyHp, enemyHp, battleMode, battleType, pvpDamageFormula, pveDamageFormula, pvpCustomFormula, pveCustomFormula, enemyName, enemyAtk, battleLog]);
+  }, [characters, enemyCharacters, selectedChar, selectedEnemy, currentEnemyHp, enemyHp, battleMode, battleType, pvpDamageFormula, pveDamageFormula, pvpCustomFormula, pveCustomFormula, enemyName, enemyAtk]);
 
   const handleClearBattleLog = useCallback(() => {
     if (!confirm('전투 기록을 모두 삭제하시겠습니까?')) return;
@@ -615,7 +614,7 @@ export default function CalcPage() {
                   {battleLog.map((entry, i) => (
                     <tr key={i}>
                       <td>{i + 1}</td>
-                      <td>{new Date(entry.timestamp).toLocaleTimeString('ko-KR')}</td>
+                      <td>{new Date(entry.timestamp).toLocaleString('ko-KR')}</td>
                       <td>{entry.battleType === 'pvp' ? 'PvP' : 'PvE'}</td>
                       <td>{entry.battleMode === 'atk' ? '공격' : '방어'}</td>
                       <td>{entry.charName}</td>
