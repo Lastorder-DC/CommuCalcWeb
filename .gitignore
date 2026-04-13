@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Legal documents (keep .example.md files)
+server/legal/*.md
+!server/legal/*.example.md

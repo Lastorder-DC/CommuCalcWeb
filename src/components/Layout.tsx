@@ -2,12 +2,14 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { APP_NAME } from '../config';
 import { useAuth } from '../contexts/useAuth';
 import { useConnection } from '../contexts/useConnection';
+import { useTheme } from '../contexts/useTheme';
 import Footer from './Footer';
 import OfflineBanner from './OfflineBanner';
 
 export default function Layout() {
   const { isLoggedIn, user, logout } = useAuth();
   const { isOnline } = useConnection();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -44,6 +46,21 @@ export default function Layout() {
               </li>
             </ul>
             <ul className="navbar-nav ms-auto mb-2 mb-md-0">
+              <li className="nav-item d-flex align-items-center me-2">
+                <div className="form-check form-switch mb-0">
+                  <input
+                    className="form-check-input"
+                    type="checkbox"
+                    role="switch"
+                    id="themeSwitch"
+                    checked={theme === 'dark'}
+                    onChange={toggleTheme}
+                  />
+                  <label className="form-check-label text-light" htmlFor="themeSwitch">
+                    {theme === 'dark' ? '🌙' : '☀️'}
+                  </label>
+                </div>
+              </li>
               {isLoggedIn ? (
                 <>
                   <li className="nav-item">

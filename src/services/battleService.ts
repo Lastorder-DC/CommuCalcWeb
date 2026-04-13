@@ -1,5 +1,6 @@
 import type { Character, BattleMode, BattleResult, DamageFormulaType, MessageTemplates } from '../types';
 import { josa } from 'es-hangul';
+import { evaluateFormula, formatFormulaStr } from './formulaService';
 
 /** 다이스 계산 (1~max) */
 export function dice(max: number): number {
@@ -72,6 +73,7 @@ export function calculateBattle(
   enemyAtkStat: number,
   currentEnemyHp: number,
   templates: MessageTemplates,
+  customFormula?: string,
 ): BattleResult & { newCharHp: number; newEnemyHp: number } {
   const enemyDiceRoll = dice(6);
   const charDiceRoll = dice(6);
@@ -85,6 +87,32 @@ export function calculateBattle(
   let newEnemyHp = currentEnemyHp;
   let templateKey: keyof MessageTemplates;
 
+  const formulaVars = {
+    적공격력: enemyAtkStat,
+    적다이스: enemyDiceRoll,
+    방어력: character.def,
+    방어구: character.defb,
+    공격력: character.atk,
+    무기: character.atkb,
+  };
+
+  /** 적의 데미지를 계산하는 내부 함수 */
+  const calcEnemyDamage = (): { dmg: number; formula: string } => {
+    if (damageFormula === 'custom' && customFormula) {
+      const dmg = evaluateFormula(customFormula, formulaVars);
+      const formula = formatFormulaStr(customFormula, formulaVars, dmg);
+      return { dmg, formula };
+    } else if (damageFormula === 'multiply') {
+      const dmg = Math.max(0, enemyDiceRoll * enemyAtkStat - character.def - character.defb);
+      const formula = `max(0, 적다이스(${enemyDiceRoll}) × 적공격력(${enemyAtkStat}) - 방어력(${character.def}) - 방어구(${character.defb})) = ${dmg}`;
+      return { dmg, formula };
+    } else {
+      const dmg = Math.max(0, enemyAtkStat + enemyDiceRoll - character.def - character.defb);
+      const formula = `max(0, 적공격력(${enemyAtkStat}) + 적다이스(${enemyDiceRoll}) - 방어력(${character.def}) - 방어구(${character.defb})) = ${dmg}`;
+      return { dmg, formula };
+    }
+  };
+
   if (mode === 'atk') {
     if (isSuccess) {
       templateKey = 'atksuccess';
@@ -93,13 +121,9 @@ export function calculateBattle(
       newEnemyHp = Math.max(0, currentEnemyHp - damage);
     } else {
       templateKey = 'atkfailed';
-      if (damageFormula === 'add') {
-        damage = Math.max(0, enemyAtkStat + enemyDiceRoll - character.def - character.defb);
-        damageFormulaStr = `max(0, 적공격력(${enemyAtkStat}) + 적다이스(${enemyDiceRoll}) - 방어력(${character.def}) - 방어구(${character.defb})) = ${damage}`;
-      } else {
-        damage = Math.max(0, enemyDiceRoll * enemyAtkStat - character.def - character.defb);
-        damageFormulaStr = `max(0, 적다이스(${enemyDiceRoll}) × 적공격력(${enemyAtkStat}) - 방어력(${character.def}) - 방어구(${character.defb})) = ${damage}`;
-      }
+      const result = calcEnemyDamage();
+      damage = result.dmg;
+      damageFormulaStr = result.formula;
       newCharHp = Math.max(0, character.hp - damage);
     }
   } else {
@@ -109,13 +133,9 @@ export function calculateBattle(
       damageFormulaStr = '방어 성공 — 피해 없음';
     } else {
       templateKey = 'deffailed';
-      if (damageFormula === 'add') {
-        damage = Math.max(0, enemyAtkStat + enemyDiceRoll - character.def - character.defb);
-        damageFormulaStr = `max(0, 적공격력(${enemyAtkStat}) + 적다이스(${enemyDiceRoll}) - 방어력(${character.def}) - 방어구(${character.defb})) = ${damage}`;
-      } else {
-        damage = Math.max(0, enemyDiceRoll * enemyAtkStat - character.def - character.defb);
-        damageFormulaStr = `max(0, 적다이스(${enemyDiceRoll}) × 적공격력(${enemyAtkStat}) - 방어력(${character.def}) - 방어구(${character.defb})) = ${damage}`;
-      }
+      const result = calcEnemyDamage();
+      damage = result.dmg;
+      damageFormulaStr = result.formula;
       newCharHp = Math.max(0, character.hp - damage);
     }
   }

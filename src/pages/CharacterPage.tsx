@@ -14,7 +14,7 @@ export default function CharacterPage() {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [enemyCharacters, setEnemyCharacters] = useState<EnemyCharacter[]>([]);
   const [templates, setTemplates] = useState(storageService.getMessageTemplates());
-  const { syncToServer, syncFromServer, canSync } = useDataSync();
+  const { syncToServer, syncFromServer, syncCategoryToServer, syncCategoryFromServer, canSync } = useDataSync();
   const [syncing, setSyncing] = useState(false);
 
   const updateChars = useCallback((chars: Character[]) => {
@@ -321,9 +321,58 @@ export default function CharacterPage() {
           <button type="button" className="btn btn-outline-primary btn-sm me-2" onClick={handleAddAllyChar}>
             새 캐릭터
           </button>
-          <button type="button" className="btn btn-outline-danger btn-sm" onClick={handleEmptyAllyData}>
+          <button type="button" className="btn btn-outline-danger btn-sm me-2" onClick={handleEmptyAllyData}>
             데이터 비우기
           </button>
+          {canSync && (
+            <>
+              <button
+                type="button"
+                className="btn btn-outline-info btn-sm me-2"
+                disabled={syncing}
+                onClick={async () => {
+                  setSyncing(true);
+                  try {
+                    await syncCategoryToServer('characters');
+                    alert('아군 캐릭터를 서버에 저장했습니다.');
+                  } catch {
+                    alert('아군 캐릭터 서버 저장에 실패했습니다.');
+                  } finally {
+                    setSyncing(false);
+                  }
+                }}
+              >
+                서버에 저장
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-success btn-sm"
+                disabled={syncing}
+                onClick={async () => {
+                  setSyncing(true);
+                  try {
+                    const loaded = await syncCategoryFromServer('characters');
+                    if (loaded) {
+                      const newChars = storageService.getCharacters();
+                      setCharacters(newChars);
+                      if (allyTabulatorInstance.current) {
+                        allyTabulatorInstance.current.replaceData(newChars);
+                      }
+                      alert('서버에서 아군 캐릭터를 불러왔습니다.');
+                    } else {
+                      alert('서버에 저장된 아군 캐릭터 데이터가 없습니다.');
+                    }
+                  } catch {
+                    alert('서버에서 아군 캐릭터 불러오기에 실패했습니다.');
+                  } finally {
+                    setSyncing(false);
+                  }
+                }}
+              >
+                서버에서 불러오기
+              </button>
+            </>
+          )}
         </div>
       </div>
       <div className="row" style={{ paddingTop: '20px' }}>
@@ -333,9 +382,58 @@ export default function CharacterPage() {
           <button type="button" className="btn btn-outline-primary btn-sm me-2" onClick={handleAddEnemyChar}>
             새 적 캐릭터
           </button>
-          <button type="button" className="btn btn-outline-danger btn-sm" onClick={handleEmptyEnemyData}>
+          <button type="button" className="btn btn-outline-danger btn-sm me-2" onClick={handleEmptyEnemyData}>
             데이터 비우기
           </button>
+          {canSync && (
+            <>
+              <button
+                type="button"
+                className="btn btn-outline-info btn-sm me-2"
+                disabled={syncing}
+                onClick={async () => {
+                  setSyncing(true);
+                  try {
+                    await syncCategoryToServer('enemyCharacters');
+                    alert('적 캐릭터를 서버에 저장했습니다.');
+                  } catch {
+                    alert('적 캐릭터 서버 저장에 실패했습니다.');
+                  } finally {
+                    setSyncing(false);
+                  }
+                }}
+              >
+                서버에 저장
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-success btn-sm"
+                disabled={syncing}
+                onClick={async () => {
+                  setSyncing(true);
+                  try {
+                    const loaded = await syncCategoryFromServer('enemyCharacters');
+                    if (loaded) {
+                      const newEnemyChars = storageService.getEnemyCharacters();
+                      setEnemyCharacters(newEnemyChars);
+                      if (enemyTabulatorInstance.current) {
+                        enemyTabulatorInstance.current.replaceData(newEnemyChars);
+                      }
+                      alert('서버에서 적 캐릭터를 불러왔습니다.');
+                    } else {
+                      alert('서버에 저장된 적 캐릭터 데이터가 없습니다.');
+                    }
+                  } catch {
+                    alert('서버에서 적 캐릭터 불러오기에 실패했습니다.');
+                  } finally {
+                    setSyncing(false);
+                  }
+                }}
+              >
+                서버에서 불러오기
+              </button>
+            </>
+          )}
         </div>
       </div>
       <div className="row" style={{ paddingTop: '20px' }}>
@@ -401,13 +499,60 @@ export default function CharacterPage() {
             <>
               <button
                 type="button"
+                className="btn btn-outline-info me-2"
+                disabled={syncing}
+                onClick={async () => {
+                  setSyncing(true);
+                  try {
+                    await syncCategoryToServer('messageTemplates');
+                    alert('자동 메세지 설정을 서버에 저장했습니다.');
+                  } catch {
+                    alert('자동 메세지 설정 서버 저장에 실패했습니다.');
+                  } finally {
+                    setSyncing(false);
+                  }
+                }}
+              >
+                {syncing ? '동기화 중...' : '서버에 저장'}
+              </button>
+              <button
+                type="button"
+                className="btn btn-outline-success me-2"
+                disabled={syncing}
+                onClick={async () => {
+                  setSyncing(true);
+                  try {
+                    const loaded = await syncCategoryFromServer('messageTemplates');
+                    if (loaded) {
+                      setTemplates(storageService.getMessageTemplates());
+                      alert('서버에서 자동 메세지 설정을 불러왔습니다.');
+                    } else {
+                      alert('서버에 저장된 자동 메세지 데이터가 없습니다.');
+                    }
+                  } catch {
+                    alert('서버에서 자동 메세지 설정 불러오기에 실패했습니다.');
+                  } finally {
+                    setSyncing(false);
+                  }
+                }}
+              >
+                {syncing ? '동기화 중...' : '서버에서 불러오기'}
+              </button>
+            </>
+          )}
+          <hr className="my-3" />
+          <h5>전체 데이터 동기화</h5>
+          {canSync && (
+            <>
+              <button
+                type="button"
                 className="btn btn-outline-primary me-2"
                 disabled={syncing}
                 onClick={async () => {
                   setSyncing(true);
                   try {
                     await syncToServer();
-                    alert('서버에 데이터를 저장했습니다.');
+                    alert('모든 데이터를 서버에 저장했습니다.');
                   } catch {
                     alert('서버 저장에 실패했습니다.');
                   } finally {
@@ -415,7 +560,7 @@ export default function CharacterPage() {
                   }
                 }}
               >
-                {syncing ? '동기화 중...' : '서버에 저장'}
+                {syncing ? '동기화 중...' : '전체 서버에 저장'}
               </button>
               <button
                 type="button"
@@ -438,7 +583,7 @@ export default function CharacterPage() {
                         enemyTabulatorInstance.current.replaceData(newEnemyChars);
                       }
                       setTemplates(storageService.getMessageTemplates());
-                      alert('서버에서 데이터를 불러왔습니다.');
+                      alert('서버에서 모든 데이터를 불러왔습니다.');
                     } else {
                       alert('서버에 저장된 데이터가 없습니다.');
                     }
@@ -449,7 +594,7 @@ export default function CharacterPage() {
                   }
                 }}
               >
-                {syncing ? '동기화 중...' : '서버에서 불러오기'}
+                {syncing ? '동기화 중...' : '전체 서버에서 불러오기'}
               </button>
             </>
           )}

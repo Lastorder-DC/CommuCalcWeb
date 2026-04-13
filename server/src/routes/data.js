@@ -24,7 +24,7 @@ router.get('/', authMiddleware, async (req, res) => {
   }
 });
 
-/** PUT /data – 사용자 데이터 저장 */
+/** PUT /data – 사용자 데이터 저장 (전체) */
 router.put('/', authMiddleware, async (req, res) => {
   try {
     const data = JSON.stringify(req.body);
@@ -38,6 +38,37 @@ router.put('/', authMiddleware, async (req, res) => {
     res.status(204).end();
   } catch (err) {
     console.error('데이터 저장 오류:', err);
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
+/** PATCH /data – 사용자 데이터 부분 저장 */
+router.patch('/', authMiddleware, async (req, res) => {
+  try {
+    // 기존 데이터 불러오기
+    const [rows] = await pool.execute(
+      'SELECT data FROM user_data WHERE user_id = ?',
+      [req.user.id],
+    );
+
+    let existing = {};
+    if (rows.length > 0) {
+      existing = JSON.parse(rows[0].data);
+    }
+
+    // 전달받은 필드만 병합
+    const merged = { ...existing, ...req.body };
+    const data = JSON.stringify(merged);
+
+    await pool.execute(
+      `INSERT INTO user_data (user_id, data) VALUES (?, ?)
+       ON DUPLICATE KEY UPDATE data = ?, updated_at = NOW()`,
+      [req.user.id, data, data],
+    );
+
+    res.status(204).end();
+  } catch (err) {
+    console.error('부분 데이터 저장 오류:', err);
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
   }
 });

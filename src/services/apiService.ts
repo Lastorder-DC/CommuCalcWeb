@@ -126,6 +126,14 @@ export async function saveUserData(data: SaveData): Promise<void> {
   });
 }
 
+/** 서버에 데이터 부분 저장 */
+export async function savePartialUserData(data: Partial<SaveData>): Promise<void> {
+  await apiRequest<void>('/data', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
 /** 서버에서 데이터 불러오기 */
 export async function loadUserData(): Promise<SaveData | null> {
   try {
