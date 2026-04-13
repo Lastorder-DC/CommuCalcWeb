@@ -1,4 +1,4 @@
-import type { Character, EnemyCharacter, MessageTemplates, SaveData, BattleType, DamageFormulaType } from '../types';
+import type { Character, EnemyCharacter, MessageTemplates, SaveData, BattleType, DamageFormulaType, BattleLogEntry } from '../types';
 
 const STORAGE_KEYS = {
   charlist: 'charlist',
@@ -16,6 +16,9 @@ const STORAGE_KEYS = {
   selectedenemy: 'selectedenemy',
   pvpDamageFormula: 'pvpDamageFormula',
   pveDamageFormula: 'pveDamageFormula',
+  pvpCustomFormula: 'pvpCustomFormula',
+  pveCustomFormula: 'pveCustomFormula',
+  battleLog: 'battleLog',
 } as const;
 
 /** 기본 메세지 템플릿 */
@@ -54,6 +57,9 @@ export const DEFAULT_ENEMY_CHARACTERS: EnemyCharacter[] = [
 /** 기본 데미지 계산식 (PvP/PvE 모두 동일) */
 export const DEFAULT_DAMAGE_FORMULA: DamageFormulaType = 'add';
 
+/** 기본 커스텀 수식 */
+export const DEFAULT_CUSTOM_FORMULA = '적공격력 + 적다이스 - 방어력 - 방어구';
+
 /**
  * 스토리지 서비스
  * 현재는 localStorage를 사용하지만, 추후 서버 API로 교체 가능하도록 인터페이스를 분리합니다.
@@ -79,10 +85,18 @@ export interface IStorageService {
   setPvpDamageFormula(formula: DamageFormulaType): void;
   getPveDamageFormula(): DamageFormulaType;
   setPveDamageFormula(formula: DamageFormulaType): void;
+  getPvpCustomFormula(): string;
+  setPvpCustomFormula(formula: string): void;
+  getPveCustomFormula(): string;
+  setPveCustomFormula(formula: string): void;
   getSelectedChar(): string | null;
   setSelectedChar(value: string): void;
   getSelectedEnemy(): string | null;
   setSelectedEnemy(value: string): void;
+  getBattleLog(): BattleLogEntry[];
+  setBattleLog(log: BattleLogEntry[]): void;
+  addBattleLogEntry(entry: BattleLogEntry): void;
+  clearBattleLog(): void;
   exportAll(): SaveData;
   importAll(data: SaveData): void;
 }
@@ -200,6 +214,46 @@ class LocalStorageService implements IStorageService {
     localStorage.setItem(STORAGE_KEYS.selectedenemy, value);
   }
 
+  getPvpCustomFormula(): string {
+    return localStorage.getItem(STORAGE_KEYS.pvpCustomFormula) || DEFAULT_CUSTOM_FORMULA;
+  }
+
+  setPvpCustomFormula(formula: string): void {
+    localStorage.setItem(STORAGE_KEYS.pvpCustomFormula, formula);
+  }
+
+  getPveCustomFormula(): string {
+    return localStorage.getItem(STORAGE_KEYS.pveCustomFormula) || DEFAULT_CUSTOM_FORMULA;
+  }
+
+  setPveCustomFormula(formula: string): void {
+    localStorage.setItem(STORAGE_KEYS.pveCustomFormula, formula);
+  }
+
+  getBattleLog(): BattleLogEntry[] {
+    const raw = localStorage.getItem(STORAGE_KEYS.battleLog);
+    if (!raw) return [];
+    try {
+      return JSON.parse(raw) as BattleLogEntry[];
+    } catch {
+      return [];
+    }
+  }
+
+  setBattleLog(log: BattleLogEntry[]): void {
+    localStorage.setItem(STORAGE_KEYS.battleLog, JSON.stringify(log));
+  }
+
+  addBattleLogEntry(entry: BattleLogEntry): void {
+    const log = this.getBattleLog();
+    log.push(entry);
+    this.setBattleLog(log);
+  }
+
+  clearBattleLog(): void {
+    localStorage.removeItem(STORAGE_KEYS.battleLog);
+  }
+
   exportAll(): SaveData {
     return {
       characters: this.getCharacters(),
@@ -210,6 +264,9 @@ class LocalStorageService implements IStorageService {
       enemyAtk: this.getEnemyAtk(),
       pvpDamageFormula: this.getPvpDamageFormula(),
       pveDamageFormula: this.getPveDamageFormula(),
+      pvpCustomFormula: this.getPvpCustomFormula(),
+      pveCustomFormula: this.getPveCustomFormula(),
+      battleLog: this.getBattleLog(),
     };
   }
 
@@ -229,6 +286,15 @@ class LocalStorageService implements IStorageService {
     }
     if (data.pveDamageFormula) {
       this.setPveDamageFormula(data.pveDamageFormula);
+    }
+    if (data.pvpCustomFormula) {
+      this.setPvpCustomFormula(data.pvpCustomFormula);
+    }
+    if (data.pveCustomFormula) {
+      this.setPveCustomFormula(data.pveCustomFormula);
+    }
+    if (data.battleLog) {
+      this.setBattleLog(data.battleLog);
     }
   }
 }

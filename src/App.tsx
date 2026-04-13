@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ConnectionProvider } from './contexts/ConnectionContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout';
 
 /** lazy import 실패 시(누락된 에셋 등) 페이지를 새로고침하는 래퍼 */
@@ -39,9 +40,10 @@ const SettingsPage = lazyWithReload(() => import('./pages/SettingsPage'));
 
 export default function App() {
   return (
-    <ConnectionProvider>
-      <AuthProvider>
-        <BrowserRouter>
+    <ThemeProvider>
+      <ConnectionProvider>
+        <AuthProvider>
+          <BrowserRouter>
           <Suspense fallback={<div className="container" style={{ paddingTop: '5rem' }}>로딩 중...</div>}>
             <Routes>
               <Route element={<Layout />}>
@@ -60,5 +62,6 @@ export default function App() {
         </BrowserRouter>
       </AuthProvider>
     </ConnectionProvider>
+    </ThemeProvider>
   );
 }
