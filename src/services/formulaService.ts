@@ -310,8 +310,17 @@ export function formatFormulaStr(
   result: number,
 ): string {
   let str = formula;
-  for (const [name, value] of Object.entries(variables)) {
-    str = str.replace(new RegExp(name, 'g'), `${name}(${value})`);
+  // 긴 변수명부터 플레이스홀더로 치환하여 부분 문자열 충돌 방지
+  const sortedEntries = Object.entries(variables).sort((a, b) => b[0].length - a[0].length);
+  const placeholders: [string, string][] = [];
+  for (let i = 0; i < sortedEntries.length; i++) {
+    const [name, value] = sortedEntries[i];
+    const placeholder = `\x00${i}\x00`;
+    str = str.replace(new RegExp(name, 'g'), placeholder);
+    placeholders.push([placeholder, `${name}(${value})`]);
+  }
+  for (const [placeholder, replacement] of placeholders) {
+    str = str.split(placeholder).join(replacement);
   }
   return `max(0, ${str}) = ${result}`;
 }
