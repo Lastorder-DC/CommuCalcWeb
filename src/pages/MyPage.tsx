@@ -5,7 +5,7 @@ import { useConnection } from '../contexts/useConnection';
 import * as apiService from '../services/apiService';
 
 export default function MyPage() {
-  const { user, logout, refreshUser, updateUser } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
   const { isOnline, xLoginEnabled } = useConnection();
   const navigate = useNavigate();
 
@@ -58,11 +58,11 @@ export default function MyPage() {
     setPasswordLoading(true);
     try {
       await apiService.changePassword(currentPassword, newPassword);
+      await refreshUser();
       setPasswordSuccess('비밀번호가 변경되었습니다.');
       setCurrentPassword('');
       setNewPassword('');
       setNewPasswordConfirm('');
-      await refreshUser();
     } catch (err) {
       setPasswordError(err instanceof Error ? err.message : '비밀번호 변경에 실패했습니다.');
     } finally {
@@ -82,11 +82,10 @@ export default function MyPage() {
 
     setEmailLoading(true);
     try {
-      const result = await apiService.changeEmail(newEmail);
-      updateUser(result.user);
+      await apiService.changeEmail(newEmail);
+      await refreshUser();
       setEmailSuccess('이메일이 변경되었습니다.');
       setNewEmail('');
-      await refreshUser();
     } catch (err) {
       setEmailError(err instanceof Error ? err.message : '이메일 변경에 실패했습니다.');
     } finally {

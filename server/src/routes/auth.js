@@ -194,7 +194,7 @@ router.put('/email', authMiddleware, async (req, res) => {
     const user = { id: req.user.id, email, username: req.user.username };
     const token = generateToken(user);
 
-    res.json({ token, user: { ...user, hasPassword: undefined, xLinked: undefined } });
+    res.json({ token, user });
   } catch (err) {
     console.error('이메일 변경 오류:', err);
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
