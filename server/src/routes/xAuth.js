@@ -148,10 +148,11 @@ router.post('/callback', async (req, res) => {
     if (existingRows.length > 0) {
       // 기존 사용자 로그인 – X에서 가져온 이메일이 있으면 업데이트
       const row = existingRows[0];
-      if (userData.data.confirmed_email && row.email !== xEmail) {
-        await pool.execute('UPDATE users SET email = ? WHERE id = ?', [xEmail, row.id]);
+      const effectiveEmail = userData.data.confirmed_email || row.email;
+      if (userData.data.confirmed_email && row.email !== userData.data.confirmed_email) {
+        await pool.execute('UPDATE users SET email = ? WHERE id = ?', [userData.data.confirmed_email, row.id]);
       }
-      user = { id: String(row.id), email: userData.data.confirmed_email ? xEmail : row.email, username: row.username };
+      user = { id: String(row.id), email: effectiveEmail, username: row.username };
     } else {
       // 새 사용자 생성 (X 계정 연동)
       // X API에서 가져온 이메일을 사용하고, 가져올 수 없는 경우 플레이스홀더를 사용합니다.
