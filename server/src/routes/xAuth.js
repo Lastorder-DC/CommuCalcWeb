@@ -35,6 +35,77 @@ function generateToken(user) {
 }
 
 /**
+ * X 사용자 정보 조회 헬퍼.
+ * confirmed_email 포함 요청이 실패하면 기본 필드만으로 재시도합니다.
+ * @param {string} accessToken - X OAuth2 access token
+ * @returns {Promise<{data: object}>} 사용자 정보
+ */
+async function fetchXUserInfo(accessToken) {
+  // 1차 시도: confirmed_email 포함
+  const primaryResponse = await fetch(
+    'https://api.x.com/2/users/me?user.fields=confirmed_email',
+    { headers: { Authorization: `Bearer ${accessToken}` } },
+  );
+
+  if (primaryResponse.ok) {
+    return primaryResponse.json();
+  }
+
+  // 403 에러인 경우 상세 원인 파악
+  const errorBody = await primaryResponse.text();
+  let parsedError;
+  try {
+    parsedError = JSON.parse(errorBody);
+  } catch {
+    parsedError = null;
+  }
+
+  const reason = parsedError?.reason || '';
+  const errorType = parsedError?.type || '';
+
+  // client-not-enrolled: 앱이 프로젝트에 연결되지 않았거나 접근 수준이 부족한 경우
+  if (
+    primaryResponse.status === 403 &&
+    (reason === 'client-not-enrolled' ||
+      errorType.includes('client-forbidden'))
+  ) {
+    console.warn(
+      'X API client-forbidden 오류 발생. confirmed_email 없이 재시도합니다:',
+      errorBody,
+    );
+
+    // 2차 시도: 기본 필드만 (confirmed_email 제외)
+    const fallbackResponse = await fetch(
+      'https://api.x.com/2/users/me',
+      { headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+
+    if (fallbackResponse.ok) {
+      return fallbackResponse.json();
+    }
+
+    // 2차도 실패 — 앱이 프로젝트에 연결되지 않은 경우
+    const fallbackError = await fallbackResponse.text();
+    console.error('X 사용자 정보 조회 재시도 실패:', fallbackError);
+
+    const err = new Error(
+      'X Developer App이 프로젝트에 연결되어 있지 않습니다. ' +
+        'X Developer Console(https://developer.x.com)에서 프로젝트를 생성하고 앱을 연결해주세요.',
+    );
+    err.statusCode = 403;
+    err.xApiError = parsedError;
+    throw err;
+  }
+
+  // 기타 에러
+  console.error('X 사용자 정보 조회 실패:', errorBody);
+  const err = new Error('X 사용자 정보를 가져올 수 없습니다.');
+  err.statusCode = primaryResponse.status;
+  err.xApiError = parsedError;
+  throw err;
+}
+
+/**
  * GET /auth/x/login – X OAuth 2.0 인증 URL 생성.
  * 클라이언트는 이 URL로 리다이렉트해서 X 로그인 진행.
  */
@@ -121,18 +192,15 @@ router.post('/callback', async (req, res) => {
     const tokenData = await tokenResponse.json();
     const xAccessToken = tokenData.access_token;
 
-    // Step 2: X 사용자 정보 조회 (confirmed_email 필드 포함)
-    const userResponse = await fetch(
-      'https://api.x.com/2/users/me?user.fields=confirmed_email',
-      { headers: { Authorization: `Bearer ${xAccessToken}` } },
-    );
-
-    if (!userResponse.ok) {
-      console.error('X 사용자 정보 조회 실패:', await userResponse.text());
-      return res.status(401).json({ message: 'X 사용자 정보를 가져올 수 없습니다.' });
+    // Step 2: X 사용자 정보 조회 (confirmed_email 포함 시도 → 실패 시 기본 필드로 재시도)
+    let userData;
+    try {
+      userData = await fetchXUserInfo(xAccessToken);
+    } catch (fetchErr) {
+      const status = fetchErr.statusCode || 401;
+      return res.status(status).json({ message: fetchErr.message });
     }
 
-    const userData = await userResponse.json();
     const xId = userData.data.id;
     const xUsername = userData.data.username;
     const xEmail = userData.data.confirmed_email || `${xId}@x.user`;
@@ -237,18 +305,15 @@ router.post('/link', async (req, res) => {
     const tokenData = await tokenResponse.json();
     const xAccessToken = tokenData.access_token;
 
-    // Step 2: X 사용자 정보 조회 (confirmed_email 필드 포함)
-    const userResponse = await fetch(
-      'https://api.x.com/2/users/me?user.fields=confirmed_email',
-      { headers: { Authorization: `Bearer ${xAccessToken}` } },
-    );
-
-    if (!userResponse.ok) {
-      console.error('X 사용자 정보 조회 실패:', await userResponse.text());
-      return res.status(401).json({ message: 'X 사용자 정보를 가져올 수 없습니다.' });
+    // Step 2: X 사용자 정보 조회 (confirmed_email 포함 시도 → 실패 시 기본 필드로 재시도)
+    let userData;
+    try {
+      userData = await fetchXUserInfo(xAccessToken);
+    } catch (fetchErr) {
+      const status = fetchErr.statusCode || 401;
+      return res.status(status).json({ message: fetchErr.message });
     }
 
-    const userData = await userResponse.json();
     const xId = userData.data.id;
 
     // Step 3: 이미 다른 계정에 연동된 X 계정인지 확인
