@@ -39,8 +39,13 @@ function generateToken(user) {
  * confirmed_email 포함 요청이 실패하면 기본 필드만으로 재시도합니다.
  * @param {string} accessToken - X OAuth2 access token
  * @returns {Promise<{data: object}>} 사용자 정보
+ * @throws {Error} statusCode 및 xApiError 속성이 포함된 에러.
+ *   403: 앱이 프로젝트에 연결되지 않은 경우, 기타: API 호출 실패.
  */
 async function fetchXUserInfo(accessToken) {
+  const CLIENT_FORBIDDEN_TYPE =
+    'https://api.twitter.com/2/problems/client-forbidden';
+
   // 1차 시도: confirmed_email 포함
   const primaryResponse = await fetch(
     'https://api.x.com/2/users/me?user.fields=confirmed_email',
@@ -51,7 +56,7 @@ async function fetchXUserInfo(accessToken) {
     return primaryResponse.json();
   }
 
-  // 403 에러인 경우 상세 원인 파악
+  // 에러 본문을 한 번만 읽고 재사용
   const errorBody = await primaryResponse.text();
   let parsedError;
   try {
@@ -67,7 +72,7 @@ async function fetchXUserInfo(accessToken) {
   if (
     primaryResponse.status === 403 &&
     (reason === 'client-not-enrolled' ||
-      errorType.includes('client-forbidden'))
+      errorType === CLIENT_FORBIDDEN_TYPE)
   ) {
     console.warn(
       'X API client-forbidden 오류 발생. confirmed_email 없이 재시도합니다:',
