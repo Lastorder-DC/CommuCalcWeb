@@ -60,7 +60,7 @@ router.get('/login', (_req, res) => {
     response_type: 'code',
     client_id: config.x.clientId,
     redirect_uri: config.x.callbackUrl,
-    scope: 'users.read tweet.read offline.access',
+    scope: 'users.read users.email tweet.read offline.access',
     state,
     code_challenge: codeChallenge,
     code_challenge_method: 'S256',
@@ -121,10 +121,11 @@ router.post('/callback', async (req, res) => {
     const tokenData = await tokenResponse.json();
     const xAccessToken = tokenData.access_token;
 
-    // Step 2: X 사용자 정보 조회
-    const userResponse = await fetch('https://api.x.com/2/users/me', {
-      headers: { Authorization: `Bearer ${xAccessToken}` },
-    });
+    // Step 2: X 사용자 정보 조회 (confirmed_email 필드 포함)
+    const userResponse = await fetch(
+      'https://api.x.com/2/users/me?user.fields=confirmed_email',
+      { headers: { Authorization: `Bearer ${xAccessToken}` } },
+    );
 
     if (!userResponse.ok) {
       console.error('X 사용자 정보 조회 실패:', await userResponse.text());
@@ -134,6 +135,7 @@ router.post('/callback', async (req, res) => {
     const userData = await userResponse.json();
     const xId = userData.data.id;
     const xUsername = userData.data.username;
+    const xEmail = userData.data.confirmed_email || `${xId}@x.user`;
 
     // Step 3: DB에서 X 계정으로 연결된 사용자 검색 또는 생성
     const [existingRows] = await pool.execute(
@@ -144,19 +146,22 @@ router.post('/callback', async (req, res) => {
     let user;
 
     if (existingRows.length > 0) {
-      // 기존 사용자 로그인
+      // 기존 사용자 로그인 – X에서 가져온 이메일이 있으면 업데이트
       const row = existingRows[0];
-      user = { id: String(row.id), email: row.email, username: row.username };
+      const effectiveEmail = userData.data.confirmed_email || row.email;
+      if (userData.data.confirmed_email && row.email !== userData.data.confirmed_email) {
+        await pool.execute('UPDATE users SET email = ? WHERE id = ?', [userData.data.confirmed_email, row.id]);
+      }
+      user = { id: String(row.id), email: effectiveEmail, username: row.username };
     } else {
       // 새 사용자 생성 (X 계정 연동)
-      // X 로그인 사용자는 실제 이메일이 없으므로 고유한 플레이스홀더를 사용합니다.
+      // X API에서 가져온 이메일을 사용하고, 가져올 수 없는 경우 플레이스홀더를 사용합니다.
       // 이 이메일로 일반 로그인은 불가능합니다 (비밀번호가 빈 문자열).
-      const email = `${xId}@x.user`;
       const [result] = await pool.execute(
         'INSERT INTO users (email, password, username, x_id) VALUES (?, ?, ?, ?)',
-        [email, '', xUsername, xId],
+        [xEmail, '', xUsername, xId],
       );
-      user = { id: String(result.insertId), email, username: xUsername };
+      user = { id: String(result.insertId), email: xEmail, username: xUsername };
     }
 
     const token = generateToken(user);
@@ -232,10 +237,11 @@ router.post('/link', async (req, res) => {
     const tokenData = await tokenResponse.json();
     const xAccessToken = tokenData.access_token;
 
-    // Step 2: X 사용자 정보 조회
-    const userResponse = await fetch('https://api.x.com/2/users/me', {
-      headers: { Authorization: `Bearer ${xAccessToken}` },
-    });
+    // Step 2: X 사용자 정보 조회 (confirmed_email 필드 포함)
+    const userResponse = await fetch(
+      'https://api.x.com/2/users/me?user.fields=confirmed_email',
+      { headers: { Authorization: `Bearer ${xAccessToken}` } },
+    );
 
     if (!userResponse.ok) {
       console.error('X 사용자 정보 조회 실패:', await userResponse.text());
