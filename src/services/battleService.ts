@@ -116,7 +116,7 @@ export function calculateBattle(
   if (mode === 'atk') {
     if (isSuccess) {
       templateKey = 'atksuccess';
-      damage = character.atk + character.atkb;
+      damage = Number(character.atk) + Number(character.atkb);
       damageFormulaStr = `공격력(${character.atk}) + 무기(${character.atkb}) = ${damage}`;
       newEnemyHp = Math.max(0, currentEnemyHp - damage);
     } else {

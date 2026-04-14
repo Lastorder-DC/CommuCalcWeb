@@ -49,13 +49,13 @@ export default function CharacterPage() {
       columns: [
         { title: '번호', field: 'num', width: 80 },
         { title: '이름', field: 'name', editor: 'input', minWidth: 100 },
-        { title: '공격력', field: 'atk', editor: 'input', width: 100 },
-        { title: '방어력', field: 'def', editor: 'input', width: 100 },
-        { title: '무기', field: 'atkb', editor: 'input', width: 100 },
-        { title: '방어구', field: 'defb', editor: 'input', width: 100 },
+        { title: '공격력', field: 'atk', editor: 'number', width: 100 },
+        { title: '방어력', field: 'def', editor: 'number', width: 100 },
+        { title: '무기', field: 'atkb', editor: 'number', width: 100 },
+        { title: '방어구', field: 'defb', editor: 'number', width: 100 },
         { title: '디버프', field: 'debuff', editor: 'input', width: 100 },
-        { title: '최대체력', field: 'maxHp', editor: 'input', width: 100 },
-        { title: '현재체력', field: 'hp', editor: 'input', width: 100 },
+        { title: '최대체력', field: 'maxHp', editor: 'number', width: 100 },
+        { title: '현재체력', field: 'hp', editor: 'number', width: 100 },
         {
           title: '관리',
           field: 'manage',
@@ -157,9 +157,9 @@ export default function CharacterPage() {
       columns: [
         { title: '번호', field: 'num', width: 80 },
         { title: '이름', field: 'name', editor: 'input', minWidth: 100 },
-        { title: '공격력', field: 'atk', editor: 'input', width: 100 },
-        { title: '최대체력', field: 'maxHp', editor: 'input', width: 100 },
-        { title: '현재체력', field: 'hp', editor: 'input', width: 100 },
+        { title: '공격력', field: 'atk', editor: 'number', width: 100 },
+        { title: '최대체력', field: 'maxHp', editor: 'number', width: 100 },
+        { title: '현재체력', field: 'hp', editor: 'number', width: 100 },
         {
           title: '관리',
           field: 'manage',
