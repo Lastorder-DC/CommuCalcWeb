@@ -51,6 +51,10 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  /** 비밀번호가 설정되어 있는지 여부 */
+  hasPassword?: boolean;
+  /** X 계정이 연동되어 있는지 여부 */
+  xLinked?: boolean;
 }
 
 /** 저장 데이터 형식 */

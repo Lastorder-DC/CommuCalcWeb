@@ -173,3 +173,45 @@ export async function xLoginCallback(code: string, state: string): Promise<AuthR
   setStoredToken(result.token);
   return result;
 }
+
+/** 비밀번호 변경 */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await apiRequest<{ message: string }>('/auth/password', {
+    method: 'PUT',
+    body: JSON.stringify({ currentPassword, newPassword }),
+  });
+}
+
+/** 이메일 변경 */
+export async function changeEmail(email: string): Promise<AuthResponse> {
+  const result = await apiRequest<AuthResponse>('/auth/email', {
+    method: 'PUT',
+    body: JSON.stringify({ email }),
+  });
+  setStoredToken(result.token);
+  return result;
+}
+
+/** 계정 삭제 */
+export async function deleteAccount(): Promise<void> {
+  await apiRequest<void>('/auth/account', {
+    method: 'DELETE',
+    body: JSON.stringify({ confirmation: 'DELETE' }),
+  });
+  setStoredToken(null);
+}
+
+/** X 계정 연동 (로그인된 상태에서) */
+export async function linkXAccount(code: string, state: string): Promise<void> {
+  await apiRequest<{ message: string }>('/auth/x/link', {
+    method: 'POST',
+    body: JSON.stringify({ code, state }),
+  });
+}
+
+/** X 계정 연동 해제 */
+export async function unlinkXAccount(): Promise<void> {
+  await apiRequest<{ message: string }>('/auth/x/unlink', {
+    method: 'DELETE',
+  });
+}

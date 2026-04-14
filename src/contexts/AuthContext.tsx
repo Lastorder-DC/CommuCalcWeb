@@ -40,6 +40,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(result.user);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const u = await apiService.getCurrentUser();
+      setUser(u);
+    } catch {
+      setUser(null);
+    }
+  }, []);
+
+  const updateUser = useCallback((u: User) => {
+    setUser(u);
+  }, []);
+
   return (
     <AuthContext value={{
       user,
@@ -49,6 +62,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register,
       logout,
       loginWithXCallback,
+      refreshUser,
+      updateUser,
     }}>
       {children}
     </AuthContext>

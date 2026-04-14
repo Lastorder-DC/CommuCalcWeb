@@ -167,4 +167,152 @@ router.post('/callback', async (req, res) => {
   }
 });
 
+/**
+ * POST /auth/x/link – 기존 이메일 계정에 X 계정 연동.
+ * 로그인된 사용자가 X 인증을 거쳐 계정을 연결합니다.
+ */
+router.post('/link', async (req, res) => {
+  if (!config.xLoginEnabled) {
+    return res.status(404).json({ message: 'X 로그인이 비활성화되어 있습니다.' });
+  }
+
+  // 인증 확인
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: '인증 토큰이 필요합니다.' });
+  }
+
+  let currentUser;
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, config.jwt.secret);
+    currentUser = { id: decoded.id, email: decoded.email, username: decoded.username };
+  } catch {
+    return res.status(401).json({ message: '유효하지 않은 토큰입니다.' });
+  }
+
+  const { code, state } = req.body;
+
+  if (!code || !state) {
+    return res.status(400).json({ message: 'code와 state가 필요합니다.' });
+  }
+
+  const pending = pendingStates.get(state);
+  if (!pending) {
+    return res.status(400).json({ message: '유효하지 않거나 만료된 state입니다.' });
+  }
+  pendingStates.delete(state);
+
+  try {
+    // Step 1: authorization code → access token 교환
+    const basicAuth = Buffer.from(
+      `${config.x.clientId}:${config.x.clientSecret}`,
+    ).toString('base64');
+
+    const tokenResponse = await fetch('https://api.x.com/2/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `Basic ${basicAuth}`,
+      },
+      body: new URLSearchParams({
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: config.x.callbackUrl,
+        code_verifier: pending.codeVerifier,
+      }).toString(),
+    });
+
+    if (!tokenResponse.ok) {
+      const err = await tokenResponse.text();
+      console.error('X 토큰 교환 실패:', err);
+      return res.status(401).json({ message: 'X 인증에 실패했습니다.' });
+    }
+
+    const tokenData = await tokenResponse.json();
+    const xAccessToken = tokenData.access_token;
+
+    // Step 2: X 사용자 정보 조회
+    const userResponse = await fetch('https://api.x.com/2/users/me', {
+      headers: { Authorization: `Bearer ${xAccessToken}` },
+    });
+
+    if (!userResponse.ok) {
+      console.error('X 사용자 정보 조회 실패:', await userResponse.text());
+      return res.status(401).json({ message: 'X 사용자 정보를 가져올 수 없습니다.' });
+    }
+
+    const userData = await userResponse.json();
+    const xId = userData.data.id;
+
+    // Step 3: 이미 다른 계정에 연동된 X 계정인지 확인
+    const [existingRows] = await pool.execute(
+      'SELECT id FROM users WHERE x_id = ? AND id != ?',
+      [xId, currentUser.id],
+    );
+
+    if (existingRows.length > 0) {
+      return res.status(409).json({ message: '이 X 계정은 이미 다른 계정에 연동되어 있습니다.' });
+    }
+
+    // Step 4: 현재 사용자에 X 계정 연동
+    await pool.execute(
+      'UPDATE users SET x_id = ? WHERE id = ?',
+      [xId, currentUser.id],
+    );
+
+    res.json({ message: 'X 계정이 연동되었습니다.' });
+  } catch (err) {
+    console.error('X 연동 오류:', err);
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
+/**
+ * DELETE /auth/x/unlink – X 계정 연동 해제.
+ * 비밀번호가 설정된 사용자만 해제 가능.
+ */
+router.delete('/unlink', async (req, res) => {
+  // 인증 확인
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: '인증 토큰이 필요합니다.' });
+  }
+
+  let currentUser;
+  try {
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, config.jwt.secret);
+    currentUser = { id: decoded.id };
+  } catch {
+    return res.status(401).json({ message: '유효하지 않은 토큰입니다.' });
+  }
+
+  try {
+    // 비밀번호가 설정된 사용자만 연동 해제 가능
+    const [rows] = await pool.execute(
+      'SELECT password FROM users WHERE id = ?',
+      [currentUser.id],
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+    }
+
+    if (!rows[0].password) {
+      return res.status(400).json({ message: '비밀번호를 먼저 설정해주세요. X 연동만으로는 로그인할 수 없게 됩니다.' });
+    }
+
+    await pool.execute(
+      'UPDATE users SET x_id = NULL WHERE id = ?',
+      [currentUser.id],
+    );
+
+    res.json({ message: 'X 계정 연동이 해제되었습니다.' });
+  } catch (err) {
+    console.error('X 연동 해제 오류:', err);
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
 module.exports = router;

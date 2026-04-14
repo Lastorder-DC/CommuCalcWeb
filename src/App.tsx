@@ -37,6 +37,7 @@ const RegisterPage = lazyWithReload(() => import('./pages/RegisterPage'));
 const TermsPage = lazyWithReload(() => import('./pages/TermsPage'));
 const PrivacyPage = lazyWithReload(() => import('./pages/PrivacyPage'));
 const SettingsPage = lazyWithReload(() => import('./pages/SettingsPage'));
+const MyPage = lazyWithReload(() => import('./pages/MyPage'));
 const XCallbackPage = lazyWithReload(() => import('./pages/XCallbackPage'));
 
 export default function App() {
@@ -57,6 +58,7 @@ export default function App() {
                 <Route path="/terms" element={<TermsPage />} />
                 <Route path="/privacy" element={<PrivacyPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/mypage" element={<MyPage />} />
                 <Route path="/x/callback" element={<XCallbackPage />} />
               </Route>
             </Routes>
