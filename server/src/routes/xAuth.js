@@ -149,7 +149,9 @@ router.post('/callback', async (req, res) => {
       user = { id: String(row.id), email: row.email, username: row.username };
     } else {
       // 새 사용자 생성 (X 계정 연동)
-      const email = `${xId}@x.user`; // X 사용자는 이메일 대신 플레이스홀더 사용
+      // X 로그인 사용자는 실제 이메일이 없으므로 고유한 플레이스홀더를 사용합니다.
+      // 이 이메일로 일반 로그인은 불가능합니다 (비밀번호가 빈 문자열).
+      const email = `${xId}@x.user`;
       const [result] = await pool.execute(
         'INSERT INTO users (email, password, username, x_id) VALUES (?, ?, ?, ?)',
         [email, '', xUsername, xId],
