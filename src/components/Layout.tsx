@@ -19,7 +19,7 @@ export default function Layout() {
 
   return (
     <div className="d-flex flex-column" style={{ minHeight: '100vh' }}>
-      <nav className={`navbar navbar-expand-md fixed-top ${theme === 'dark' ? 'navbar-dark bg-dark' : 'navbar-dark bg-primary'}`}>
+      <nav className={`navbar navbar-expand-md fixed-top navbar-dark ${theme === 'dark' ? '' : 'bg-primary'}`} style={theme === 'dark' ? { backgroundColor: 'var(--bs-gray-800)' } : undefined}>
         <div className="container-fluid">
           <NavLink className="navbar-brand" to="/">{APP_NAME}</NavLink>
           <button
@@ -64,7 +64,7 @@ export default function Layout() {
               {isLoggedIn ? (
                 <>
                   <li className="nav-item">
-                    <span className="nav-link disabled">{user?.username}</span>
+                    <NavLink className="nav-link" to="/mypage">{user?.username}</NavLink>
                   </li>
                   <li className="nav-item">
                     <button className="nav-link btn btn-link" onClick={handleLogout}>로그아웃</button>

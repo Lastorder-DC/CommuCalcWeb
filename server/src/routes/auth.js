@@ -98,9 +98,126 @@ router.post('/logout', (_req, res) => {
   res.status(204).end();
 });
 
-/** GET /auth/me – 현재 사용자 정보 */
-router.get('/me', authMiddleware, (req, res) => {
-  res.json(req.user);
+/** GET /auth/me – 현재 사용자 정보 (비밀번호 보유 여부, X 연동 여부 포함) */
+router.get('/me', authMiddleware, async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      'SELECT id, email, username, password, x_id FROM users WHERE id = ?',
+      [req.user.id],
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+    }
+
+    const row = rows[0];
+    res.json({
+      id: String(row.id),
+      email: row.email,
+      username: row.username,
+      hasPassword: !!row.password,
+      xLinked: !!row.x_id,
+    });
+  } catch (err) {
+    console.error('사용자 정보 조회 오류:', err);
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
+/** PUT /auth/password – 비밀번호 변경 */
+router.put('/password', authMiddleware, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 8) {
+      return res.status(400).json({ message: '새 비밀번호는 8자 이상이어야 합니다.' });
+    }
+
+    const [rows] = await pool.execute(
+      'SELECT password FROM users WHERE id = ?',
+      [req.user.id],
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
+    }
+
+    const userRow = rows[0];
+
+    // 비밀번호가 있는 사용자는 현재 비밀번호 확인 필요
+    if (userRow.password) {
+      if (!currentPassword) {
+        return res.status(400).json({ message: '현재 비밀번호를 입력해주세요.' });
+      }
+      const match = await bcrypt.compare(currentPassword, userRow.password);
+      if (!match) {
+        return res.status(401).json({ message: '현재 비밀번호가 올바르지 않습니다.' });
+      }
+    }
+
+    const hashed = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    await pool.execute(
+      'UPDATE users SET password = ? WHERE id = ?',
+      [hashed, req.user.id],
+    );
+
+    res.json({ message: '비밀번호가 변경되었습니다.' });
+  } catch (err) {
+    console.error('비밀번호 변경 오류:', err);
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
+/** PUT /auth/email – 이메일 변경 */
+router.put('/email', authMiddleware, async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: '이메일을 입력해주세요.' });
+    }
+
+    // 이메일 중복 확인
+    const [existing] = await pool.execute(
+      'SELECT id FROM users WHERE email = ? AND id != ?',
+      [email, req.user.id],
+    );
+    if (existing.length > 0) {
+      return res.status(409).json({ message: '이미 등록된 이메일입니다.' });
+    }
+
+    await pool.execute(
+      'UPDATE users SET email = ? WHERE id = ?',
+      [email, req.user.id],
+    );
+
+    const user = { id: req.user.id, email, username: req.user.username };
+    const token = generateToken(user);
+
+    res.json({ token, user: { ...user, hasPassword: undefined, xLinked: undefined } });
+  } catch (err) {
+    console.error('이메일 변경 오류:', err);
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
+/** DELETE /auth/account – 계정 삭제 */
+router.delete('/account', authMiddleware, async (req, res) => {
+  try {
+    const { confirmation } = req.body;
+
+    if (confirmation !== 'DELETE') {
+      return res.status(400).json({ message: '계정 삭제를 확인해주세요.' });
+    }
+
+    // user_data는 ON DELETE CASCADE로 자동 삭제됨
+    await pool.execute('DELETE FROM users WHERE id = ?', [req.user.id]);
+
+    res.status(204).end();
+  } catch (err) {
+    console.error('계정 삭제 오류:', err);
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
 });
 
 module.exports = router;
