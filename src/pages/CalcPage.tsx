@@ -111,11 +111,11 @@ export default function CalcPage() {
       if (enemy) {
         setEnemyName(enemy.name);
         setEnemyHp(enemy.maxHp);
-        setEnemyAtk(enemy.atk + enemy.atkb);
+        setEnemyAtk(Number(enemy.atk) + Number(enemy.atkb));
         setCurrentEnemyHp(enemy.hp);
         storageService.setEnemyName(enemy.name);
         storageService.setEnemyHp(enemy.maxHp);
-        storageService.setEnemyAtk(enemy.atk + enemy.atkb);
+        storageService.setEnemyAtk(Number(enemy.atk) + Number(enemy.atkb));
       }
     } else {
       const enemy = enemyCharacters.find(c => String(c.num) === selectedEnemy);
