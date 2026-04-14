@@ -1,0 +1,170 @@
+const { Router } = require('express');
+const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
+const pool = require('../db');
+const config = require('../config');
+
+const router = Router();
+
+/**
+ * PKCE code_verifier / code_challenge 생성 헬퍼.
+ * 임시로 메모리에 state → verifier 매핑을 저장합니다.
+ * 프로덕션에서는 Redis 등 외부 저장소를 사용하는 것이 좋습니다.
+ */
+const pendingStates = new Map();
+
+/** 만료된 state 정리 (10분) */
+const STATE_TTL = 10 * 60 * 1000;
+
+function cleanupStates() {
+  const now = Date.now();
+  for (const [key, val] of pendingStates) {
+    if (now - val.createdAt > STATE_TTL) {
+      pendingStates.delete(key);
+    }
+  }
+}
+
+/** JWT 토큰 생성 헬퍼 */
+function generateToken(user) {
+  return jwt.sign(
+    { id: user.id, email: user.email, username: user.username },
+    config.jwt.secret,
+    { expiresIn: config.jwt.expiresIn },
+  );
+}
+
+/**
+ * GET /auth/x/login – X OAuth 2.0 인증 URL 생성.
+ * 클라이언트는 이 URL로 리다이렉트해서 X 로그인 진행.
+ */
+router.get('/login', (_req, res) => {
+  if (!config.xLoginEnabled) {
+    return res.status(404).json({ message: 'X 로그인이 비활성화되어 있습니다.' });
+  }
+
+  cleanupStates();
+
+  // PKCE code_verifier & code_challenge (S256)
+  const codeVerifier = crypto.randomBytes(32).toString('base64url');
+  const codeChallenge = crypto
+    .createHash('sha256')
+    .update(codeVerifier)
+    .digest('base64url');
+
+  const state = crypto.randomBytes(16).toString('hex');
+
+  pendingStates.set(state, { codeVerifier, createdAt: Date.now() });
+
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: config.x.clientId,
+    redirect_uri: config.x.callbackUrl,
+    scope: 'users.read tweet.read offline.access',
+    state,
+    code_challenge: codeChallenge,
+    code_challenge_method: 'S256',
+  });
+
+  const authorizeUrl = `https://x.com/i/oauth2/authorize?${params.toString()}`;
+
+  res.json({ authorizeUrl, state });
+});
+
+/**
+ * POST /auth/x/callback – X OAuth 2.0 콜백 처리.
+ * authorization code를 access token으로 교환 → X 사용자 정보 조회 → 로그인/회원가입 처리.
+ */
+router.post('/callback', async (req, res) => {
+  if (!config.xLoginEnabled) {
+    return res.status(404).json({ message: 'X 로그인이 비활성화되어 있습니다.' });
+  }
+
+  const { code, state } = req.body;
+
+  if (!code || !state) {
+    return res.status(400).json({ message: 'code와 state가 필요합니다.' });
+  }
+
+  const pending = pendingStates.get(state);
+  if (!pending) {
+    return res.status(400).json({ message: '유효하지 않거나 만료된 state입니다.' });
+  }
+  pendingStates.delete(state);
+
+  try {
+    // Step 1: authorization code → access token 교환
+    const basicAuth = Buffer.from(
+      `${config.x.clientId}:${config.x.clientSecret}`,
+    ).toString('base64');
+
+    const tokenResponse = await fetch('https://api.x.com/2/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `Basic ${basicAuth}`,
+      },
+      body: new URLSearchParams({
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: config.x.callbackUrl,
+        code_verifier: pending.codeVerifier,
+      }).toString(),
+    });
+
+    if (!tokenResponse.ok) {
+      const err = await tokenResponse.text();
+      console.error('X 토큰 교환 실패:', err);
+      return res.status(401).json({ message: 'X 인증에 실패했습니다.' });
+    }
+
+    const tokenData = await tokenResponse.json();
+    const xAccessToken = tokenData.access_token;
+
+    // Step 2: X 사용자 정보 조회
+    const userResponse = await fetch('https://api.x.com/2/users/me', {
+      headers: { Authorization: `Bearer ${xAccessToken}` },
+    });
+
+    if (!userResponse.ok) {
+      console.error('X 사용자 정보 조회 실패:', await userResponse.text());
+      return res.status(401).json({ message: 'X 사용자 정보를 가져올 수 없습니다.' });
+    }
+
+    const userData = await userResponse.json();
+    const xId = userData.data.id;
+    const xUsername = userData.data.username;
+
+    // Step 3: DB에서 X 계정으로 연결된 사용자 검색 또는 생성
+    const [existingRows] = await pool.execute(
+      'SELECT id, email, username FROM users WHERE x_id = ?',
+      [xId],
+    );
+
+    let user;
+
+    if (existingRows.length > 0) {
+      // 기존 사용자 로그인
+      const row = existingRows[0];
+      user = { id: String(row.id), email: row.email, username: row.username };
+    } else {
+      // 새 사용자 생성 (X 계정 연동)
+      // X 로그인 사용자는 실제 이메일이 없으므로 고유한 플레이스홀더를 사용합니다.
+      // 이 이메일로 일반 로그인은 불가능합니다 (비밀번호가 빈 문자열).
+      const email = `${xId}@x.user`;
+      const [result] = await pool.execute(
+        'INSERT INTO users (email, password, username, x_id) VALUES (?, ?, ?, ?)',
+        [email, '', xUsername, xId],
+      );
+      user = { id: String(result.insertId), email, username: xUsername };
+    }
+
+    const token = generateToken(user);
+    res.json({ token, user });
+  } catch (err) {
+    console.error('X 로그인 오류:', err);
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
+module.exports = router;

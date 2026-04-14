@@ -9,6 +9,7 @@ router.get('/', (_req, res) => {
     status: 'ok',
     serverVersion: config.serverVersion,
     minClientVersion: config.minClientVersion,
+    xLoginEnabled: config.xLoginEnabled,
   });
 });
 

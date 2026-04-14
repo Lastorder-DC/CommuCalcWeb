@@ -19,7 +19,7 @@ export default function Layout() {
 
   return (
     <div className="d-flex flex-column" style={{ minHeight: '100vh' }}>
-      <nav className="navbar navbar-expand-md navbar-dark fixed-top bg-dark">
+      <nav className={`navbar navbar-expand-md fixed-top ${theme === 'dark' ? 'navbar-dark bg-dark' : 'navbar-dark bg-primary'}`}>
         <div className="container-fluid">
           <NavLink className="navbar-brand" to="/">{APP_NAME}</NavLink>
           <button

@@ -112,4 +112,5 @@ export interface HealthResponse {
   status: string;
   serverVersion: string;
   minClientVersion: string;
+  xLoginEnabled?: boolean;
 }

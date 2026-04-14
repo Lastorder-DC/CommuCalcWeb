@@ -7,6 +7,8 @@ export interface ConnectionContextType {
   isChecking: boolean;
   /** 클라이언트 업데이트 필요 여부 */
   needsUpdate: boolean;
+  /** X 로그인 활성화 여부 */
+  xLoginEnabled: boolean;
   /** 연결 재시도 */
   retry: () => void;
 }
