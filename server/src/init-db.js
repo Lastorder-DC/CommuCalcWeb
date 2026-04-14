@@ -40,14 +40,27 @@ async function initDatabase() {
       CREATE TABLE IF NOT EXISTS users (
         id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
         email VARCHAR(255) NOT NULL UNIQUE,
-        password VARCHAR(255) NOT NULL,
+        password VARCHAR(255) NOT NULL DEFAULT '',
         username VARCHAR(100) NOT NULL,
+        x_id VARCHAR(64) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        INDEX idx_email (email)
+        INDEX idx_email (email),
+        UNIQUE INDEX idx_x_id (x_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
     console.log("테이블 'users'가 준비되었습니다.");
+
+    // 기존 테이블에 x_id 컬럼이 없으면 추가
+    const [columns] = await connection.execute(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'x_id'`,
+      [config.db.database],
+    );
+    if (columns.length === 0) {
+      await connection.execute('ALTER TABLE users ADD COLUMN x_id VARCHAR(64) DEFAULT NULL AFTER username');
+      await connection.execute('ALTER TABLE users ADD UNIQUE INDEX idx_x_id (x_id)');
+      console.log("'users' 테이블에 'x_id' 컬럼이 추가되었습니다.");
+    }
 
     // user_data 테이블
     await connection.execute(`

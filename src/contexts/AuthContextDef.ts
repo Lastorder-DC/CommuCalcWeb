@@ -14,6 +14,8 @@ export interface AuthContextType {
   register: (email: string, password: string, username: string) => Promise<void>;
   /** 로그아웃 처리 */
   logout: () => Promise<void>;
+  /** X OAuth 콜백 로그인 처리 */
+  loginWithXCallback: (code: string, state: string) => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | null>(null);

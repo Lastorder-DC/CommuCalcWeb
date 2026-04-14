@@ -6,6 +6,7 @@ const config = require('./config');
 
 const healthRouter = require('./routes/health');
 const authRouter = require('./routes/auth');
+const xAuthRouter = require('./routes/xAuth');
 const dataRouter = require('./routes/data');
 const legalRouter = require('./routes/legal');
 
@@ -40,6 +41,7 @@ function createApp() {
   // 라우트
   app.use('/health', healthRouter);
   app.use('/auth', authRouter);
+  app.use('/auth/x', xAuthRouter);
   app.use('/data', dataRouter);
   app.use('/legal', legalRouter);
 

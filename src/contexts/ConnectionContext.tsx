@@ -22,6 +22,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
   const [isOnline, setIsOnline] = useState(false);
   const [isChecking, setIsChecking] = useState(true);
   const [needsUpdate, setNeedsUpdate] = useState(false);
+  const [xLoginEnabled, setXLoginEnabled] = useState(false);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const checkConnection = useCallback(async () => {
@@ -33,11 +34,14 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
         if (result.minClientVersion && isVersionBelow(APP_VERSION, result.minClientVersion)) {
           setNeedsUpdate(true);
         }
+        setXLoginEnabled(!!result.xLoginEnabled);
       } else {
         setIsOnline(false);
+        setXLoginEnabled(false);
       }
     } catch {
       setIsOnline(false);
+      setXLoginEnabled(false);
     } finally {
       setIsChecking(false);
     }
@@ -60,6 +64,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
       isOnline,
       isChecking,
       needsUpdate,
+      xLoginEnabled,
       retry: checkConnection,
     }}>
       {children}

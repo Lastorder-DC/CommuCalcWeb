@@ -158,3 +158,18 @@ export async function getPrivacyPolicy(): Promise<string> {
   if (!response.ok) throw new Error('개인정보처리방침을 불러올 수 없습니다.');
   return response.text();
 }
+
+/** X 로그인 인증 URL 가져오기 */
+export async function getXLoginUrl(): Promise<{ authorizeUrl: string; state: string }> {
+  return apiRequest<{ authorizeUrl: string; state: string }>('/auth/x/login');
+}
+
+/** X OAuth 콜백 처리 */
+export async function xLoginCallback(code: string, state: string): Promise<AuthResponse> {
+  const result = await apiRequest<AuthResponse>('/auth/x/callback', {
+    method: 'POST',
+    body: JSON.stringify({ code, state }),
+  });
+  setStoredToken(result.token);
+  return result;
+}

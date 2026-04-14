@@ -32,6 +32,9 @@ export default function SettingsPage() {
         <div className="card mb-3">
           <div className="card-header"><strong>API 서버 설정</strong></div>
           <div className="card-body">
+            <div className="alert alert-danger py-2 mb-3">
+              <small>⚠️ 일반적인 경우 이 설정을 변경할 필요가 없습니다. 잘못된 설정은 앱이 정상적으로 작동하지 않을 수 있습니다.</small>
+            </div>
             <div className="mb-3">
               <span className="badge bg-secondary me-2">연결 상태</span>
               {isChecking ? (
