@@ -49,7 +49,7 @@ router.post('/register', async (req, res) => {
       [email, hashedPassword, username],
     );
 
-    const user = { id: String(result.insertId), email, username };
+    const user = { id: String(result.insertId), email, username, hasPassword: true, xLinked: false };
     const token = generateToken(user);
 
     res.status(201).json({ token, user });
@@ -69,7 +69,7 @@ router.post('/login', async (req, res) => {
     }
 
     const [rows] = await pool.execute(
-      'SELECT id, email, password, username FROM users WHERE email = ?',
+      'SELECT id, email, password, username, x_id FROM users WHERE email = ?',
       [email],
     );
 
@@ -83,7 +83,13 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: '이메일 또는 비밀번호가 올바르지 않습니다.' });
     }
 
-    const user = { id: String(userRow.id), email: userRow.email, username: userRow.username };
+    const user = {
+      id: String(userRow.id),
+      email: userRow.email,
+      username: userRow.username,
+      hasPassword: !!userRow.password,
+      xLinked: !!userRow.x_id,
+    };
     const token = generateToken(user);
 
     res.json({ token, user });
