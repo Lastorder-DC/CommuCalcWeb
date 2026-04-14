@@ -212,20 +212,29 @@ router.post('/callback', async (req, res) => {
 
     // Step 3: DB에서 X 계정으로 연결된 사용자 검색 또는 생성
     const [existingRows] = await pool.execute(
-      'SELECT id, email, username FROM users WHERE x_id = ?',
+      'SELECT id, email, username, password FROM users WHERE x_id = ?',
       [xId],
     );
 
     let user;
 
     if (existingRows.length > 0) {
-      // 기존 사용자 로그인 – X에서 가져온 이메일이 있으면 업데이트
+      // 기존 사용자 로그인 – 가짜 이메일(@x.user)인 경우에만 X에서 가져온 이메일로 업데이트
       const row = existingRows[0];
-      const effectiveEmail = userData.data.confirmed_email || row.email;
-      if (userData.data.confirmed_email && row.email !== userData.data.confirmed_email) {
+      const isFakeEmail = row.email.endsWith('@x.user');
+      const effectiveEmail = (isFakeEmail && userData.data.confirmed_email)
+        ? userData.data.confirmed_email
+        : row.email;
+      if (isFakeEmail && userData.data.confirmed_email && row.email !== userData.data.confirmed_email) {
         await pool.execute('UPDATE users SET email = ? WHERE id = ?', [userData.data.confirmed_email, row.id]);
       }
-      user = { id: String(row.id), email: effectiveEmail, username: row.username };
+      user = {
+        id: String(row.id),
+        email: effectiveEmail,
+        username: row.username,
+        hasPassword: !!row.password,
+        xLinked: true,
+      };
     } else {
       // 새 사용자 생성 (X 계정 연동)
       // X API에서 가져온 이메일을 사용하고, 가져올 수 없는 경우 플레이스홀더를 사용합니다.
@@ -234,7 +243,7 @@ router.post('/callback', async (req, res) => {
         'INSERT INTO users (email, password, username, x_id) VALUES (?, ?, ?, ?)',
         [xEmail, '', xUsername, xId],
       );
-      user = { id: String(result.insertId), email: xEmail, username: xUsername };
+      user = { id: String(result.insertId), email: xEmail, username: xUsername, hasPassword: false, xLinked: true };
     }
 
     const token = generateToken(user);

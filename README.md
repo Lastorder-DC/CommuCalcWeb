@@ -12,6 +12,8 @@
 - **커스텀 데미지 수식** — 곱/합 외에 사용자 정의 수식 입력 지원 (문법 검증 포함)
 - **전투 기록** — 전투 결과를 별도로 저장 및 초기화, 서버 동기화 지원
 - **세분화된 서버 동기화** — 아군 캐릭터, 적 캐릭터, 자동 메세지 설정, 데미지 수식 설정, 전투 기록을 각각 개별 저장/불러오기 가능
+- **X (Twitter) 로그인** — X OAuth 2.0 PKCE 기반 소셜 로그인 지원
+- **계정 관리 (마이페이지)** — 이메일 변경, 비밀번호 변경/설정, X 계정 연동/해제, 계정 삭제
 
 ## 기술 스택
 
@@ -27,6 +29,7 @@
 - **MySQL** (데이터 저장)
 - **JWT** (인증)
 - **bcrypt** (비밀번호 암호화)
+- **X OAuth 2.0** (소셜 로그인)
 
 ## 시작하기
 
@@ -57,6 +60,9 @@ npm start
 
 서버 설정은 `.env` 파일을 통해 관리합니다. 기본 포트는 3000입니다.
 
+X 로그인을 사용하려면 `.env`에 `X_CLIENT_ID`, `X_CLIENT_SECRET`, `X_CALLBACK_URL`을 설정하세요.
+자세한 설정 방법은 [X_API_SETUP.md](X_API_SETUP.md)를 참고하세요.
+
 ## 프로젝트 구조
 
 ```
@@ -70,6 +76,10 @@ src/
 │   ├── CharacterPage.tsx   # 캐릭터 관리 + 서버 동기화
 │   ├── GuidePage.tsx
 │   ├── SettingsPage.tsx
+│   ├── LoginPage.tsx       # 로그인 (이메일 + X 로그인)
+│   ├── RegisterPage.tsx    # 회원가입
+│   ├── MyPage.tsx          # 마이페이지 (계정 관리)
+│   ├── XCallbackPage.tsx   # X OAuth 콜백 처리
 │   ├── TermsPage.tsx
 │   └── PrivacyPage.tsx
 ├── services/       # 비즈니스 로직
@@ -89,7 +99,8 @@ server/
 │   └── privacy.example.md
 └── src/
     ├── routes/     # API 라우트
-    │   ├── auth.js
+    │   ├── auth.js     # 인증 (회원가입/로그인/비밀번호/이메일)
+    │   ├── xAuth.js    # X OAuth 2.0 (로그인/연동/해제)
     │   ├── data.js     # 전체/부분 데이터 저장
     │   ├── health.js
     │   └── legal.js    # 법적 문서 (파일 기반)
