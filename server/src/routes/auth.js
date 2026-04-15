@@ -49,7 +49,7 @@ router.post('/register', async (req, res) => {
       [email, hashedPassword, username],
     );
 
-    const user = { id: String(result.insertId), email, username, hasPassword: true, xLinked: false };
+    const user = { id: String(result.insertId), email, username, hasPassword: true, xLinked: false, mastodonLinked: false };
     const token = generateToken(user);
 
     res.status(201).json({ token, user });
@@ -69,7 +69,7 @@ router.post('/login', async (req, res) => {
     }
 
     const [rows] = await pool.execute(
-      'SELECT id, email, password, username, x_id FROM users WHERE email = ?',
+      'SELECT id, email, password, username, x_id, mastodon_id FROM users WHERE email = ?',
       [email],
     );
 
@@ -89,6 +89,7 @@ router.post('/login', async (req, res) => {
       username: userRow.username,
       hasPassword: !!userRow.password,
       xLinked: !!userRow.x_id,
+      mastodonLinked: !!userRow.mastodon_id,
     };
     const token = generateToken(user);
 
@@ -104,11 +105,11 @@ router.post('/logout', (_req, res) => {
   res.status(204).end();
 });
 
-/** GET /auth/me – 현재 사용자 정보 (비밀번호 보유 여부, X 연동 여부 포함) */
+/** GET /auth/me – 현재 사용자 정보 (비밀번호 보유 여부, X 연동 여부, 마스토돈 연동 여부 포함) */
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const [rows] = await pool.execute(
-      'SELECT id, email, username, password, x_id FROM users WHERE id = ?',
+      'SELECT id, email, username, password, x_id, mastodon_id FROM users WHERE id = ?',
       [req.user.id],
     );
 
@@ -123,6 +124,7 @@ router.get('/me', authMiddleware, async (req, res) => {
       username: row.username,
       hasPassword: !!row.password,
       xLinked: !!row.x_id,
+      mastodonLinked: !!row.mastodon_id,
     });
   } catch (err) {
     console.error('사용자 정보 조회 오류:', err);
@@ -203,6 +205,66 @@ router.put('/email', authMiddleware, async (req, res) => {
     res.json({ token, user });
   } catch (err) {
     console.error('이메일 변경 오류:', err);
+    res.status(500).json({ message: '서버 오류가 발생했습니다.' });
+  }
+});
+
+/**
+ * POST /auth/complete-signup – OAuth 로그인 후 이메일 입력으로 가입 완료.
+ * X 또는 Mastodon OAuth 콜백에서 needsEmail 응답을 받은 후 호출.
+ * provider, providerId, username, email을 받아 사용자를 생성합니다.
+ */
+router.post('/complete-signup', async (req, res) => {
+  try {
+    const { provider, providerId, username, email } = req.body;
+
+    if (!provider || !providerId || !username || !email) {
+      return res.status(400).json({ message: '필수 정보가 누락되었습니다.' });
+    }
+
+    if (!['x', 'mastodon'].includes(provider)) {
+      return res.status(400).json({ message: '지원하지 않는 인증 제공자입니다.' });
+    }
+
+    // 이메일 중복 확인
+    const [existingEmail] = await pool.execute(
+      'SELECT id FROM users WHERE email = ?',
+      [email],
+    );
+    if (existingEmail.length > 0) {
+      return res.status(409).json({ message: '이미 등록된 이메일입니다.' });
+    }
+
+    // 해당 OAuth 계정이 이미 연동된 사용자가 있는지 확인
+    const idColumn = provider === 'x' ? 'x_id' : 'mastodon_id';
+    const [existingOAuth] = await pool.execute(
+      `SELECT id FROM users WHERE ${idColumn} = ?`,
+      [providerId],
+    );
+    if (existingOAuth.length > 0) {
+      return res.status(409).json({ message: '이미 연동된 계정이 있습니다.' });
+    }
+
+    // 사용자 생성
+    const insertColumn = provider === 'x' ? 'x_id' : 'mastodon_id';
+    const [result] = await pool.execute(
+      `INSERT INTO users (email, password, username, ${insertColumn}) VALUES (?, ?, ?, ?)`,
+      [email, '', username, providerId],
+    );
+
+    const user = {
+      id: String(result.insertId),
+      email,
+      username,
+      hasPassword: false,
+      xLinked: provider === 'x',
+      mastodonLinked: provider === 'mastodon',
+    };
+    const token = generateToken(user);
+
+    res.status(201).json({ token, user });
+  } catch (err) {
+    console.error('OAuth 가입 완료 오류:', err);
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
   }
 });

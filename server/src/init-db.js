@@ -43,10 +43,12 @@ async function initDatabase() {
         password VARCHAR(255) NOT NULL DEFAULT '',
         username VARCHAR(100) NOT NULL,
         x_id VARCHAR(64) DEFAULT NULL,
+        mastodon_id VARCHAR(255) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
         INDEX idx_email (email),
-        UNIQUE INDEX idx_x_id (x_id)
+        UNIQUE INDEX idx_x_id (x_id),
+        UNIQUE INDEX idx_mastodon_id (mastodon_id)
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
     console.log("테이블 'users'가 준비되었습니다.");
@@ -60,6 +62,17 @@ async function initDatabase() {
       await connection.execute('ALTER TABLE users ADD COLUMN x_id VARCHAR(64) DEFAULT NULL AFTER username');
       await connection.execute('ALTER TABLE users ADD UNIQUE INDEX idx_x_id (x_id)');
       console.log("'users' 테이블에 'x_id' 컬럼이 추가되었습니다.");
+    }
+
+    // 기존 테이블에 mastodon_id 컬럼이 없으면 추가
+    const [mastodonColumns] = await connection.execute(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'mastodon_id'`,
+      [config.db.database],
+    );
+    if (mastodonColumns.length === 0) {
+      await connection.execute('ALTER TABLE users ADD COLUMN mastodon_id VARCHAR(255) DEFAULT NULL AFTER x_id');
+      await connection.execute('ALTER TABLE users ADD UNIQUE INDEX idx_mastodon_id (mastodon_id)');
+      console.log("'users' 테이블에 'mastodon_id' 컬럼이 추가되었습니다.");
     }
 
     // user_data 테이블
