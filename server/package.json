@@ -1,6 +1,6 @@
 {
   "name": "commu-calc-server",
-  "version": "1.0.0",
+  "version": "0.8.3",
   "description": "커뮤 전투 계산기 API 서버",
   "main": "src/index.js",
   "scripts": {
