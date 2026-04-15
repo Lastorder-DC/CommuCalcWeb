@@ -9,6 +9,10 @@ export interface ConnectionContextType {
   needsUpdate: boolean;
   /** X 로그인 활성화 여부 */
   xLoginEnabled: boolean;
+  /** Mastodon 로그인 활성화 여부 */
+  mastodonLoginEnabled: boolean;
+  /** Mastodon 서버 이름 (표시용) */
+  mastodonServerName: string;
   /** 연결 재시도 */
   retry: () => void;
 }

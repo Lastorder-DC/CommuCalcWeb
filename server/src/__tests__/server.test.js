@@ -19,6 +19,7 @@ describe('GET /health', () => {
       serverVersion: config.serverVersion,
       minClientVersion: config.minClientVersion,
       xLoginEnabled: config.xLoginEnabled,
+      mastodonLoginEnabled: config.mastodonLoginEnabled,
     });
   });
 

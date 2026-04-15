@@ -23,6 +23,8 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
   const [isChecking, setIsChecking] = useState(true);
   const [needsUpdate, setNeedsUpdate] = useState(false);
   const [xLoginEnabled, setXLoginEnabled] = useState(false);
+  const [mastodonLoginEnabled, setMastodonLoginEnabled] = useState(false);
+  const [mastodonServerName, setMastodonServerName] = useState('');
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const checkConnection = useCallback(async () => {
@@ -35,13 +37,19 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
           setNeedsUpdate(true);
         }
         setXLoginEnabled(!!result.xLoginEnabled);
+        setMastodonLoginEnabled(!!result.mastodonLoginEnabled);
+        setMastodonServerName(result.mastodonServerName || '');
       } else {
         setIsOnline(false);
         setXLoginEnabled(false);
+        setMastodonLoginEnabled(false);
+        setMastodonServerName('');
       }
     } catch {
       setIsOnline(false);
       setXLoginEnabled(false);
+      setMastodonLoginEnabled(false);
+      setMastodonServerName('');
     } finally {
       setIsChecking(false);
     }
@@ -65,6 +73,8 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
       isChecking,
       needsUpdate,
       xLoginEnabled,
+      mastodonLoginEnabled,
+      mastodonServerName,
       retry: checkConnection,
     }}>
       {children}

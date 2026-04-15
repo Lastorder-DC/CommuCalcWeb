@@ -1,5 +1,5 @@
 import { getApiUrl, API_RETRY_COUNT, API_RETRY_DELAY } from '../config';
-import type { AuthResponse, HealthResponse, LoginRequest, RegisterRequest, SaveData, User } from '../types';
+import type { AuthResponse, HealthResponse, LoginRequest, OAuthCallbackResponse, RegisterRequest, SaveData, User } from '../types';
 
 /** 토큰 저장 키 */
 const TOKEN_STORAGE_KEY = 'auth_token';
@@ -165,12 +165,14 @@ export async function getXLoginUrl(): Promise<{ authorizeUrl: string; state: str
 }
 
 /** X OAuth 콜백 처리 */
-export async function xLoginCallback(code: string, state: string): Promise<AuthResponse> {
-  const result = await apiRequest<AuthResponse>('/auth/x/callback', {
+export async function xLoginCallback(code: string, state: string): Promise<OAuthCallbackResponse> {
+  const result = await apiRequest<OAuthCallbackResponse>('/auth/x/callback', {
     method: 'POST',
     body: JSON.stringify({ code, state }),
   });
-  setStoredToken(result.token);
+  if ('token' in result) {
+    setStoredToken(result.token);
+  }
   return result;
 }
 
@@ -214,4 +216,51 @@ export async function unlinkXAccount(): Promise<void> {
   await apiRequest<{ message: string }>('/auth/x/unlink', {
     method: 'DELETE',
   });
+}
+
+/** Mastodon 로그인 인증 URL 가져오기 */
+export async function getMastodonLoginUrl(): Promise<{ authorizeUrl: string; state: string }> {
+  return apiRequest<{ authorizeUrl: string; state: string }>('/auth/mastodon/login');
+}
+
+/** Mastodon OAuth 콜백 처리 */
+export async function mastodonLoginCallback(code: string, state: string): Promise<OAuthCallbackResponse> {
+  const result = await apiRequest<OAuthCallbackResponse>('/auth/mastodon/callback', {
+    method: 'POST',
+    body: JSON.stringify({ code, state }),
+  });
+  if ('token' in result) {
+    setStoredToken(result.token);
+  }
+  return result;
+}
+
+/** Mastodon 계정 연동 (로그인된 상태에서) */
+export async function linkMastodonAccount(code: string, state: string): Promise<void> {
+  await apiRequest<{ message: string }>('/auth/mastodon/link', {
+    method: 'POST',
+    body: JSON.stringify({ code, state }),
+  });
+}
+
+/** Mastodon 계정 연동 해제 */
+export async function unlinkMastodonAccount(): Promise<void> {
+  await apiRequest<{ message: string }>('/auth/mastodon/unlink', {
+    method: 'DELETE',
+  });
+}
+
+/** OAuth 가입 완료 (이메일 입력 후) */
+export async function completeOAuthSignup(
+  provider: 'x' | 'mastodon',
+  providerId: string,
+  username: string,
+  email: string,
+): Promise<AuthResponse> {
+  const result = await apiRequest<AuthResponse>('/auth/complete-signup', {
+    method: 'POST',
+    body: JSON.stringify({ provider, providerId, username, email }),
+  });
+  setStoredToken(result.token);
+  return result;
 }

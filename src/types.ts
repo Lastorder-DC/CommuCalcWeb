@@ -55,6 +55,8 @@ export interface User {
   hasPassword?: boolean;
   /** X 계정이 연동되어 있는지 여부 */
   xLinked?: boolean;
+  /** Mastodon 계정이 연동되어 있는지 여부 */
+  mastodonLinked?: boolean;
 }
 
 /** 저장 데이터 형식 */
@@ -117,4 +119,17 @@ export interface HealthResponse {
   serverVersion: string;
   minClientVersion: string;
   xLoginEnabled?: boolean;
+  mastodonLoginEnabled?: boolean;
+  mastodonServerName?: string;
 }
+
+/** OAuth 가입 미완료 응답 (이메일 입력 필요) */
+export interface OAuthNeedsEmailResponse {
+  needsEmail: true;
+  provider: 'x' | 'mastodon';
+  providerId: string;
+  username: string;
+}
+
+/** OAuth 콜백 응답 (로그인 성공 또는 이메일 입력 필요) */
+export type OAuthCallbackResponse = AuthResponse | OAuthNeedsEmailResponse;
