@@ -226,6 +226,10 @@ router.post('/complete-signup', async (req, res) => {
       return res.status(400).json({ message: '지원하지 않는 인증 제공자입니다.' });
     }
 
+    // OAuth 제공자별 컬럼 이름 매핑 (화이트리스트)
+    const PROVIDER_COLUMN = { x: 'x_id', mastodon: 'mastodon_id' };
+    const idColumn = PROVIDER_COLUMN[provider];
+
     // 이메일 중복 확인
     const [existingEmail] = await pool.execute(
       'SELECT id FROM users WHERE email = ?',
@@ -236,21 +240,19 @@ router.post('/complete-signup', async (req, res) => {
     }
 
     // 해당 OAuth 계정이 이미 연동된 사용자가 있는지 확인
-    const idColumn = provider === 'x' ? 'x_id' : 'mastodon_id';
-    const [existingOAuth] = await pool.execute(
-      `SELECT id FROM users WHERE ${idColumn} = ?`,
-      [providerId],
-    );
+    const checkQuery = idColumn === 'x_id'
+      ? 'SELECT id FROM users WHERE x_id = ?'
+      : 'SELECT id FROM users WHERE mastodon_id = ?';
+    const [existingOAuth] = await pool.execute(checkQuery, [providerId]);
     if (existingOAuth.length > 0) {
       return res.status(409).json({ message: '이미 연동된 계정이 있습니다.' });
     }
 
     // 사용자 생성
-    const insertColumn = provider === 'x' ? 'x_id' : 'mastodon_id';
-    const [result] = await pool.execute(
-      `INSERT INTO users (email, password, username, ${insertColumn}) VALUES (?, ?, ?, ?)`,
-      [email, '', username, providerId],
-    );
+    const insertQuery = idColumn === 'x_id'
+      ? 'INSERT INTO users (email, password, username, x_id) VALUES (?, ?, ?, ?)'
+      : 'INSERT INTO users (email, password, username, mastodon_id) VALUES (?, ?, ?, ?)';
+    const [result] = await pool.execute(insertQuery, [email, '', username, providerId]);
 
     const user = {
       id: String(result.insertId),
