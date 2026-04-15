@@ -40,6 +40,7 @@ export default function XCallbackPage() {
               provider: result.provider,
               providerId: result.providerId,
               username: result.username,
+              email: result.email || '',
             }));
             navigate('/oauth/email');
           } else {

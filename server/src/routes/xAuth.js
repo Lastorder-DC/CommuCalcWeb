@@ -236,28 +236,14 @@ router.post('/callback', async (req, res) => {
         xLinked: true,
         mastodonLinked: !!row.mastodon_id,
       };
-    } else if (xEmail) {
-      // 새 사용자 생성 (이메일이 있는 경우)
-      const [existingEmail] = await pool.execute(
-        'SELECT id FROM users WHERE email = ?',
-        [xEmail],
-      );
-      if (existingEmail.length > 0) {
-        return res.status(409).json({ message: '이 이메일로 이미 등록된 계정이 있습니다. 해당 계정으로 로그인 후 X 연동을 해주세요.' });
-      }
-
-      const [result] = await pool.execute(
-        'INSERT INTO users (email, password, username, x_id) VALUES (?, ?, ?, ?)',
-        [xEmail, '', xUsername, xId],
-      );
-      user = { id: String(result.insertId), email: xEmail, username: xUsername, hasPassword: false, xLinked: true, mastodonLinked: false };
     } else {
-      // 이메일을 가져올 수 없는 경우 — 클라이언트에서 이메일 입력을 받아야 함
+      // 신규 사용자 — 이메일/약관 동의를 위해 항상 클라이언트에서 처리
       return res.json({
         needsEmail: true,
         provider: 'x',
         providerId: xId,
         username: xUsername,
+        email: xEmail || undefined,
       });
     }
 

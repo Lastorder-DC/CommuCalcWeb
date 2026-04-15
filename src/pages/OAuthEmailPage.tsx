@@ -7,6 +7,7 @@ interface OAuthSignupData {
   provider: 'x' | 'mastodon';
   providerId: string;
   username: string;
+  email?: string;
 }
 
 export default function OAuthEmailPage() {
@@ -35,6 +36,10 @@ export default function OAuthEmailPage() {
         return;
       }
       setSignupData(data);
+      // OAuth 제공자(X API 등)에서 가져온 이메일이 있으면 사전 입력
+      if (data.email) {
+        setEmail(data.email);
+      }
     } catch {
       navigate('/login');
     }

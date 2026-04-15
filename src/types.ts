@@ -129,6 +129,8 @@ export interface OAuthNeedsEmailResponse {
   provider: 'x' | 'mastodon';
   providerId: string;
   username: string;
+  /** X API 등에서 가져온 이메일 (사전 입력용, 선택사항) */
+  email?: string;
 }
 
 /** OAuth 콜백 응답 (로그인 성공 또는 이메일 입력 필요) */
