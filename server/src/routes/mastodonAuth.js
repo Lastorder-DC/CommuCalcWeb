@@ -33,29 +33,45 @@ function generateToken(user) {
   );
 }
 
+/** 서버 인덱스로 Mastodon 서버 설정을 가져오는 헬퍼 */
+function getMastodonServer(serverIndex) {
+  const idx = parseInt(serverIndex, 10);
+  if (isNaN(idx) || idx < 0 || idx >= config.mastodonServers.length) {
+    return null;
+  }
+  return config.mastodonServers[idx];
+}
+
 /**
  * GET /auth/mastodon/login – Mastodon OAuth 인증 URL 생성.
  * 클라이언트는 이 URL로 리다이렉트해서 Mastodon 로그인 진행.
+ * query param: serverIndex (기본값 0)
  */
-router.get('/login', (_req, res) => {
+router.get('/login', (req, res) => {
   if (!config.mastodonLoginEnabled) {
     return res.status(404).json({ message: 'Mastodon 로그인이 비활성화되어 있습니다.' });
+  }
+
+  const serverIndex = parseInt(req.query.serverIndex, 10) || 0;
+  const server = getMastodonServer(serverIndex);
+  if (!server) {
+    return res.status(400).json({ message: '유효하지 않은 Mastodon 서버 인덱스입니다.' });
   }
 
   cleanupStates();
 
   const state = crypto.randomBytes(16).toString('hex');
-  pendingStates.set(state, { createdAt: Date.now() });
+  pendingStates.set(state, { createdAt: Date.now(), serverIndex });
 
   const params = new URLSearchParams({
     response_type: 'code',
-    client_id: config.mastodon.clientId,
-    redirect_uri: config.mastodon.redirectUri,
+    client_id: server.clientId,
+    redirect_uri: server.redirectUri,
     scope: 'read:accounts',
     state,
   });
 
-  const authorizeUrl = `https://${config.mastodon.domain}/oauth/authorize?${params.toString()}`;
+  const authorizeUrl = `https://${server.domain}/oauth/authorize?${params.toString()}`;
 
   res.json({ authorizeUrl, state });
 });
@@ -81,17 +97,22 @@ router.post('/callback', async (req, res) => {
   }
   pendingStates.delete(state);
 
+  const server = getMastodonServer(pending.serverIndex);
+  if (!server) {
+    return res.status(400).json({ message: '유효하지 않은 Mastodon 서버 설정입니다.' });
+  }
+
   try {
     // Step 1: authorization code → access token 교환
-    const tokenResponse = await fetch(`https://${config.mastodon.domain}/oauth/token`, {
+    const tokenResponse = await fetch(`https://${server.domain}/oauth/token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         grant_type: 'authorization_code',
         code,
-        client_id: config.mastodon.clientId,
-        client_secret: config.mastodon.clientSecret,
-        redirect_uri: config.mastodon.redirectUri,
+        client_id: server.clientId,
+        client_secret: server.clientSecret,
+        redirect_uri: server.redirectUri,
         scope: 'read:accounts',
       }),
     });
@@ -106,7 +127,7 @@ router.post('/callback', async (req, res) => {
     const mastodonAccessToken = tokenData.access_token;
 
     // Step 2: Mastodon 사용자 정보 조회 (verify_credentials)
-    const userResponse = await fetch(`https://${config.mastodon.domain}/api/v1/accounts/verify_credentials`, {
+    const userResponse = await fetch(`https://${server.domain}/api/v1/accounts/verify_credentials`, {
       headers: { Authorization: `Bearer ${mastodonAccessToken}` },
     });
 
@@ -118,7 +139,7 @@ router.post('/callback', async (req, res) => {
 
     const mastodonUser = await userResponse.json();
     // Mastodon 고유 ID: acct@domain 형식으로 저장 (서버 간 고유성 보장)
-    const mastodonId = `${mastodonUser.id}@${config.mastodon.domain}`;
+    const mastodonId = `${mastodonUser.id}@${server.domain}`;
     const mastodonUsername = mastodonUser.display_name || mastodonUser.username;
 
     // Step 3: DB에서 Mastodon 계정으로 연결된 사용자 검색 또는 생성
@@ -194,17 +215,22 @@ router.post('/link', async (req, res) => {
   }
   pendingStates.delete(state);
 
+  const server = getMastodonServer(pending.serverIndex);
+  if (!server) {
+    return res.status(400).json({ message: '유효하지 않은 Mastodon 서버 설정입니다.' });
+  }
+
   try {
     // Step 1: authorization code → access token 교환
-    const tokenResponse = await fetch(`https://${config.mastodon.domain}/oauth/token`, {
+    const tokenResponse = await fetch(`https://${server.domain}/oauth/token`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         grant_type: 'authorization_code',
         code,
-        client_id: config.mastodon.clientId,
-        client_secret: config.mastodon.clientSecret,
-        redirect_uri: config.mastodon.redirectUri,
+        client_id: server.clientId,
+        client_secret: server.clientSecret,
+        redirect_uri: server.redirectUri,
         scope: 'read:accounts',
       }),
     });
@@ -219,7 +245,7 @@ router.post('/link', async (req, res) => {
     const mastodonAccessToken = tokenData.access_token;
 
     // Step 2: Mastodon 사용자 정보 조회
-    const userResponse = await fetch(`https://${config.mastodon.domain}/api/v1/accounts/verify_credentials`, {
+    const userResponse = await fetch(`https://${server.domain}/api/v1/accounts/verify_credentials`, {
       headers: { Authorization: `Bearer ${mastodonAccessToken}` },
     });
 
@@ -230,7 +256,7 @@ router.post('/link', async (req, res) => {
     }
 
     const mastodonUser = await userResponse.json();
-    const mastodonId = `${mastodonUser.id}@${config.mastodon.domain}`;
+    const mastodonId = `${mastodonUser.id}@${server.domain}`;
 
     // Step 3: 이미 다른 계정에 연동된 Mastodon 계정인지 확인
     const [existingRows] = await pool.execute(

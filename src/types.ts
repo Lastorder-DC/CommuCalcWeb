@@ -113,6 +113,16 @@ export interface ApiError {
   code?: string;
 }
 
+/** Mastodon 서버 정보 (health 응답에서 전달) */
+export interface MastodonServerInfo {
+  /** 서버 인덱스 (0부터 시작, 최대 4) */
+  index: number;
+  /** 로그인 버튼에 표시할 서버 이름 */
+  serverName?: string;
+  /** 커스텀 서버 아이콘 URL (svg, png 등) */
+  iconUrl?: string;
+}
+
 /** Health 엔드포인트 응답 */
 export interface HealthResponse {
   status: string;
@@ -120,7 +130,10 @@ export interface HealthResponse {
   minClientVersion: string;
   xLoginEnabled?: boolean;
   mastodonLoginEnabled?: boolean;
+  /** @deprecated mastodonServers 사용 */
   mastodonServerName?: string;
+  /** 구성된 Mastodon 서버 목록 */
+  mastodonServers?: MastodonServerInfo[];
 }
 
 /** OAuth 가입 미완료 응답 (이메일 입력 필요) */

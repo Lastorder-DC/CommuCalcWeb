@@ -219,8 +219,8 @@ export async function unlinkXAccount(): Promise<void> {
 }
 
 /** Mastodon 로그인 인증 URL 가져오기 */
-export async function getMastodonLoginUrl(): Promise<{ authorizeUrl: string; state: string }> {
-  return apiRequest<{ authorizeUrl: string; state: string }>('/auth/mastodon/login');
+export async function getMastodonLoginUrl(serverIndex = 0): Promise<{ authorizeUrl: string; state: string }> {
+  return apiRequest<{ authorizeUrl: string; state: string }>(`/auth/mastodon/login?serverIndex=${serverIndex}`);
 }
 
 /** Mastodon OAuth 콜백 처리 */
