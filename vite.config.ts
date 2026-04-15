@@ -25,12 +25,18 @@ export default defineConfig({
         comments: false,
       },
     },
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks: {
-          vendor: ['react', 'react-dom', 'react-router-dom'],
-          tabulator: ['tabulator-tables'],
-          hangul: ['es-hangul'],
+        manualChunks(id) {
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/') || id.includes('node_modules/react-router-dom/')) {
+            return 'vendor';
+          }
+          if (id.includes('tabulator-tables')) {
+            return 'tabulator';
+          }
+          if (id.includes('es-hangul')) {
+            return 'hangul';
+          }
         },
       },
     },

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { josa } from 'es-hangul';
 import { useAuth } from '../contexts/useAuth';
 import { useConnection } from '../contexts/useConnection';
 import { getXLoginUrl, getMastodonLoginUrl } from '../services/apiService';
@@ -157,7 +158,7 @@ export default function LoginPage() {
                 disabled={!isOnline || loading}
               >
                 <MastodonServerIcon server={server} />
-                {server.serverName ? `${server.serverName}로 로그인` : 'Mastodon으로 로그인'}
+                {server.serverName ? `${josa(server.serverName, '으로/로')} 로그인` : 'Mastodon으로 로그인'}
               </button>
             ))}
           </div>
