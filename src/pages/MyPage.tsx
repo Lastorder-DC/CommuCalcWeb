@@ -17,7 +17,7 @@ function MastodonDefaultIcon() {
 /** 서버 아이콘 렌더링 (커스텀 URL이 있으면 img, 없으면 기본 SVG) */
 function MastodonServerIcon({ server }: { server: MastodonServerInfo }) {
   if (server.iconUrl) {
-    return <img src={server.iconUrl} alt="" style={{ height: '18px', width: 'auto' }} />;
+    return <img src={server.iconUrl} alt={`${server.serverName || 'Mastodon'} icon`} style={{ height: '18px', width: 'auto' }} />;
   }
   return <MastodonDefaultIcon />;
 }

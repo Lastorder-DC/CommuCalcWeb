@@ -52,7 +52,7 @@ router.get('/login', (req, res) => {
     return res.status(404).json({ message: 'Mastodon 로그인이 비활성화되어 있습니다.' });
   }
 
-  const serverIndex = req.query.serverIndex || '0';
+  const serverIndex = parseInt(req.query.serverIndex, 10) || 0;
   const server = getMastodonServer(serverIndex);
   if (!server) {
     return res.status(400).json({ message: '유효하지 않은 Mastodon 서버 인덱스입니다.' });
@@ -61,7 +61,7 @@ router.get('/login', (req, res) => {
   cleanupStates();
 
   const state = crypto.randomBytes(16).toString('hex');
-  pendingStates.set(state, { createdAt: Date.now(), serverIndex: parseInt(serverIndex, 10) });
+  pendingStates.set(state, { createdAt: Date.now(), serverIndex });
 
   const params = new URLSearchParams({
     response_type: 'code',
