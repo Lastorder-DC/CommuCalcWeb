@@ -109,8 +109,10 @@ X 로그인을 비활성화하려면 `.env` 파일에서 `X_CLIENT_ID`, `X_CLIEN
        → 클라이언트 POST /auth/x/callback (code, state 전달)
        → 서버: code → access_token 교환 (X API)
        → 서버: access_token으로 X 사용자 정보 조회
-       → 서버: DB에서 사용자 조회/생성 → JWT 발급
-       → 클라이언트: JWT 저장 → 로그인 완료
+       → 서버: DB에서 사용자 조회
+         ├─ 기존 사용자: JWT 발급 → 로그인 완료
+         └─ 신규 사용자: needsEmail 응답 (X 이메일 포함 시 사전 입력)
+            → 이메일 입력 + 약관 동의 → POST /auth/complete-signup → JWT 발급 → 가입 완료
 ```
 
 ## 주의사항
@@ -118,5 +120,5 @@ X 로그인을 비활성화하려면 `.env` 파일에서 `X_CLIENT_ID`, `X_CLIEN
 - X API는 **OAuth 2.0 Authorization Code Flow with PKCE**를 사용합니다.
 - Confidential Client (Web App) 타입으로 설정해야 Client Secret을 사용할 수 있습니다.
 - X OAuth state는 10분 후 만료됩니다.
-- X 계정으로 처음 로그인 시 자동으로 계정이 생성됩니다.
-- X 로그인으로 생성된 계정은 이메일/비밀번호 로그인을 지원하지 않습니다.
+- X 계정으로 처음 로그인 시 이메일 입력 및 약관/개인정보처리방침 동의 페이지로 이동합니다. X API에서 이메일을 가져올 수 있는 경우 이메일 필드에 자동으로 채워집니다.
+- 이메일 입력과 약관 동의가 완료되어야 가입이 최종 처리됩니다.

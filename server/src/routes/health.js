@@ -10,6 +10,8 @@ router.get('/', (_req, res) => {
     serverVersion: config.serverVersion,
     minClientVersion: config.minClientVersion,
     xLoginEnabled: config.xLoginEnabled,
+    mastodonLoginEnabled: config.mastodonLoginEnabled,
+    mastodonServerName: config.mastodonLoginEnabled ? config.mastodon.serverName : undefined,
   });
 });
 

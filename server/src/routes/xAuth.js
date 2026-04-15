@@ -208,11 +208,11 @@ router.post('/callback', async (req, res) => {
 
     const xId = userData.data.id;
     const xUsername = userData.data.username;
-    const xEmail = userData.data.confirmed_email || `${xId}@x.user`;
+    const xEmail = userData.data.confirmed_email || null;
 
     // Step 3: DB에서 X 계정으로 연결된 사용자 검색 또는 생성
     const [existingRows] = await pool.execute(
-      'SELECT id, email, username, password FROM users WHERE x_id = ?',
+      'SELECT id, email, username, password, mastodon_id FROM users WHERE x_id = ?',
       [xId],
     );
 
@@ -234,16 +234,17 @@ router.post('/callback', async (req, res) => {
         username: row.username,
         hasPassword: !!row.password,
         xLinked: true,
+        mastodonLinked: !!row.mastodon_id,
       };
     } else {
-      // 새 사용자 생성 (X 계정 연동)
-      // X API에서 가져온 이메일을 사용하고, 가져올 수 없는 경우 플레이스홀더를 사용합니다.
-      // 이 이메일로 일반 로그인은 불가능합니다 (비밀번호가 빈 문자열).
-      const [result] = await pool.execute(
-        'INSERT INTO users (email, password, username, x_id) VALUES (?, ?, ?, ?)',
-        [xEmail, '', xUsername, xId],
-      );
-      user = { id: String(result.insertId), email: xEmail, username: xUsername, hasPassword: false, xLinked: true };
+      // 신규 사용자 — 이메일/약관 동의를 위해 항상 클라이언트에서 처리
+      return res.json({
+        needsEmail: true,
+        provider: 'x',
+        providerId: xId,
+        username: xUsername,
+        email: xEmail || undefined,
+      });
     }
 
     const token = generateToken(user);
@@ -374,9 +375,9 @@ router.delete('/unlink', async (req, res) => {
   }
 
   try {
-    // 비밀번호가 설정된 사용자만 연동 해제 가능
+    // 비밀번호 또는 다른 로그인 수단이 있는 사용자만 연동 해제 가능
     const [rows] = await pool.execute(
-      'SELECT password FROM users WHERE id = ?',
+      'SELECT password, mastodon_id FROM users WHERE id = ?',
       [currentUser.id],
     );
 
@@ -384,8 +385,9 @@ router.delete('/unlink', async (req, res) => {
       return res.status(404).json({ message: '사용자를 찾을 수 없습니다.' });
     }
 
-    if (!rows[0].password) {
-      return res.status(400).json({ message: '비밀번호를 먼저 설정해주세요. X 연동만으로는 로그인할 수 없게 됩니다.' });
+    // 비밀번호도 없고 Mastodon 연동도 없으면 해제 불가 (로그인 수단이 없어짐)
+    if (!rows[0].password && !rows[0].mastodon_id) {
+      return res.status(400).json({ message: '비밀번호를 먼저 설정하거나 다른 로그인 수단을 연동해주세요. X 연동만으로는 로그인할 수 없게 됩니다.' });
     }
 
     await pool.execute(

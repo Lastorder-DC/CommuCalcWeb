@@ -39,6 +39,8 @@ const PrivacyPage = lazyWithReload(() => import('./pages/PrivacyPage'));
 const SettingsPage = lazyWithReload(() => import('./pages/SettingsPage'));
 const MyPage = lazyWithReload(() => import('./pages/MyPage'));
 const XCallbackPage = lazyWithReload(() => import('./pages/XCallbackPage'));
+const MastodonCallbackPage = lazyWithReload(() => import('./pages/MastodonCallbackPage'));
+const OAuthEmailPage = lazyWithReload(() => import('./pages/OAuthEmailPage'));
 
 export default function App() {
   return (
@@ -60,6 +62,8 @@ export default function App() {
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/mypage" element={<MyPage />} />
                 <Route path="/x/callback" element={<XCallbackPage />} />
+                <Route path="/mastodon/callback" element={<MastodonCallbackPage />} />
+                <Route path="/oauth/email" element={<OAuthEmailPage />} />
               </Route>
             </Routes>
           </Suspense>

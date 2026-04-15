@@ -4,10 +4,10 @@ module.exports = {
   port: parseInt(process.env.PORT, 10) || 3000,
 
   /** 서버 버전 */
-  serverVersion: '0.8.3',
+  serverVersion: '0.9.0',
 
   /** 지원하는 최소 클라이언트 버전 */
-  minClientVersion: '0.8.3',
+  minClientVersion: '0.9.0',
 
   db: {
     host: process.env.DB_HOST || 'localhost',
@@ -32,6 +32,20 @@ module.exports = {
   /** X 로그인 활성화 여부 */
   get xLoginEnabled() {
     return !!(this.x.clientId && this.x.clientSecret && this.x.callbackUrl);
+  },
+
+  /** Mastodon OAuth 설정 */
+  mastodon: {
+    domain: process.env.MASTODON_DOMAIN || '',
+    serverName: process.env.MASTODON_SERVER_NAME || '',
+    clientId: process.env.MASTODON_CLIENT_ID || '',
+    clientSecret: process.env.MASTODON_CLIENT_SECRET || '',
+    redirectUri: process.env.MASTODON_REDIRECT_URI || '',
+  },
+
+  /** Mastodon 로그인 활성화 여부 */
+  get mastodonLoginEnabled() {
+    return !!(this.mastodon.domain && this.mastodon.clientId && this.mastodon.clientSecret && this.mastodon.redirectUri);
   },
 
   corsOrigin: process.env.CORS_ORIGIN

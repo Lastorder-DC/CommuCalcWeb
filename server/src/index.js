@@ -7,6 +7,7 @@ const config = require('./config');
 const healthRouter = require('./routes/health');
 const authRouter = require('./routes/auth');
 const xAuthRouter = require('./routes/xAuth');
+const mastodonAuthRouter = require('./routes/mastodonAuth');
 const dataRouter = require('./routes/data');
 const legalRouter = require('./routes/legal');
 
@@ -42,6 +43,7 @@ function createApp() {
   app.use('/health', healthRouter);
   app.use('/auth', authRouter);
   app.use('/auth/x', xAuthRouter);
+  app.use('/auth/mastodon', mastodonAuthRouter);
   app.use('/data', dataRouter);
   app.use('/legal', legalRouter);
 

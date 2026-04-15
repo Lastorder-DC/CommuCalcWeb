@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, type ReactNode } from 'react';
-import type { User } from '../types';
+import type { OAuthCallbackResponse, User } from '../types';
 import { AuthContext } from './AuthContextDef';
 import * as apiService from '../services/apiService';
 
@@ -35,8 +35,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
-  const loginWithXCallback = useCallback(async (code: string, state: string) => {
+  const loginWithXCallback = useCallback(async (code: string, state: string): Promise<OAuthCallbackResponse> => {
     const result = await apiService.xLoginCallback(code, state);
+    if ('user' in result) {
+      setUser(result.user);
+    }
+    return result;
+  }, []);
+
+  const loginWithMastodonCallback = useCallback(async (code: string, state: string): Promise<OAuthCallbackResponse> => {
+    const result = await apiService.mastodonLoginCallback(code, state);
+    if ('user' in result) {
+      setUser(result.user);
+    }
+    return result;
+  }, []);
+
+  const completeOAuthSignup = useCallback(async (
+    provider: 'x' | 'mastodon',
+    providerId: string,
+    username: string,
+    email: string,
+  ) => {
+    const result = await apiService.completeOAuthSignup(provider, providerId, username, email);
     setUser(result.user);
   }, []);
 
@@ -62,6 +83,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       register,
       logout,
       loginWithXCallback,
+      loginWithMastodonCallback,
+      completeOAuthSignup,
       refreshUser,
       updateUser,
     }}>
