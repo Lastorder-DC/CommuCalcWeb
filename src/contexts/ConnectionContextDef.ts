@@ -1,4 +1,5 @@
 import { createContext } from 'react';
+import type { MastodonServerInfo } from '../types';
 
 export interface ConnectionContextType {
   /** API 서버 연결 상태 */
@@ -11,8 +12,8 @@ export interface ConnectionContextType {
   xLoginEnabled: boolean;
   /** Mastodon 로그인 활성화 여부 */
   mastodonLoginEnabled: boolean;
-  /** Mastodon 서버 이름 (표시용) */
-  mastodonServerName: string;
+  /** 구성된 Mastodon 서버 목록 */
+  mastodonServers: MastodonServerInfo[];
   /** 연결 재시도 */
   retry: () => void;
 }

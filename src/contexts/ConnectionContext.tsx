@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef, type ReactNode } from 'react'
 import { ConnectionContext } from './ConnectionContextDef';
 import { testConnection } from '../services/apiService';
 import { APP_VERSION } from '../config';
+import type { MastodonServerInfo } from '../types';
 
 /** 세 자리 semver 비교: a < b 이면 true */
 function isVersionBelow(current: string, minimum: string): boolean {
@@ -24,7 +25,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
   const [needsUpdate, setNeedsUpdate] = useState(false);
   const [xLoginEnabled, setXLoginEnabled] = useState(false);
   const [mastodonLoginEnabled, setMastodonLoginEnabled] = useState(false);
-  const [mastodonServerName, setMastodonServerName] = useState('');
+  const [mastodonServers, setMastodonServers] = useState<MastodonServerInfo[]>([]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const checkConnection = useCallback(async () => {
@@ -38,18 +39,18 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
         }
         setXLoginEnabled(!!result.xLoginEnabled);
         setMastodonLoginEnabled(!!result.mastodonLoginEnabled);
-        setMastodonServerName(result.mastodonServerName || '');
+        setMastodonServers(result.mastodonServers || []);
       } else {
         setIsOnline(false);
         setXLoginEnabled(false);
         setMastodonLoginEnabled(false);
-        setMastodonServerName('');
+        setMastodonServers([]);
       }
     } catch {
       setIsOnline(false);
       setXLoginEnabled(false);
       setMastodonLoginEnabled(false);
-      setMastodonServerName('');
+      setMastodonServers([]);
     } finally {
       setIsChecking(false);
     }
@@ -74,7 +75,7 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
       needsUpdate,
       xLoginEnabled,
       mastodonLoginEnabled,
-      mastodonServerName,
+      mastodonServers,
       retry: checkConnection,
     }}>
       {children}

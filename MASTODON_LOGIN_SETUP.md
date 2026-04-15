@@ -32,28 +32,60 @@
 
 ## 3. 서버 환경변수 설정
 
-서버의 `.env` 파일에 다음 환경변수를 추가합니다:
+서버의 `.env` 파일에 다음 환경변수를 추가합니다. 최대 5개의 Mastodon 서버를 연동할 수 있습니다.
+
+### 첫 번째 서버 (접미사 없음)
 
 ```env
-# Mastodon OAuth 설정
+# Mastodon 서버 1 설정
 MASTODON_DOMAIN=mastodon.social
 MASTODON_SERVER_NAME=마스토돈
 MASTODON_CLIENT_ID=your_client_id_here
 MASTODON_CLIENT_SECRET=your_client_secret_here
 MASTODON_REDIRECT_URI=https://your-domain.com/mastodon/callback
+MASTODON_ICON_URL=
 ```
+
+### 추가 서버 (2~5번째, _2 ~ _5 접미사 사용)
+
+```env
+# Mastodon 서버 2 설정
+MASTODON_DOMAIN_2=misskey.example.com
+MASTODON_SERVER_NAME_2=미스키
+MASTODON_CLIENT_ID_2=your_client_id_here
+MASTODON_CLIENT_SECRET_2=your_client_secret_here
+MASTODON_REDIRECT_URI_2=https://your-domain.com/mastodon/callback
+MASTODON_ICON_URL_2=https://example.com/misskey-icon.png
+
+# Mastodon 서버 3 설정
+MASTODON_DOMAIN_3=another.instance.com
+MASTODON_SERVER_NAME_3=다른 서버
+MASTODON_CLIENT_ID_3=your_client_id_here
+MASTODON_CLIENT_SECRET_3=your_client_secret_here
+MASTODON_REDIRECT_URI_3=https://your-domain.com/mastodon/callback
+MASTODON_ICON_URL_3=
+
+# 서버 4, 5도 같은 패턴으로 _4, _5 접미사 사용
+```
+
+### 환경변수 설명
 
 | 환경변수 | 설명 | 예시 |
 |----------|------|------|
-| `MASTODON_DOMAIN` | Mastodon 서버 도메인 (https:// 제외) | `mastodon.social` |
-| `MASTODON_SERVER_NAME` | 로그인 버튼에 표시할 서버 이름 (선택사항) | `마스토돈` |
-| `MASTODON_CLIENT_ID` | Mastodon 앱의 클라이언트 키 | `a1b2c3d4e5...` |
-| `MASTODON_CLIENT_SECRET` | Mastodon 앱의 클라이언트 시크릿 | `f6g7h8i9j0...` |
-| `MASTODON_REDIRECT_URI` | 클라이언트 앱의 콜백 URL | `https://calc.yumeka.xyz/mastodon/callback` |
+| `MASTODON_DOMAIN[_N]` | Mastodon 서버 도메인 (https:// 제외) | `mastodon.social` |
+| `MASTODON_SERVER_NAME[_N]` | 로그인 버튼에 표시할 서버 이름 (선택사항) | `마스토돈` |
+| `MASTODON_CLIENT_ID[_N]` | Mastodon 앱의 클라이언트 키 | `a1b2c3d4e5...` |
+| `MASTODON_CLIENT_SECRET[_N]` | Mastodon 앱의 클라이언트 시크릿 | `f6g7h8i9j0...` |
+| `MASTODON_REDIRECT_URI[_N]` | 클라이언트 앱의 콜백 URL | `https://calc.yumeka.xyz/mastodon/callback` |
+| `MASTODON_ICON_URL[_N]` | 로그인 버튼에 표시할 커스텀 아이콘 URL (선택사항) | `https://example.com/icon.png` |
 
-> ⚠️ `MASTODON_REDIRECT_URI`는 Mastodon 앱 설정에 등록한 **리다이렉트 URI**와 정확히 일치해야 합니다.
+> `[_N]`은 서버 번호 접미사입니다. 첫 번째 서버는 접미사 없이, 2~5번째 서버는 `_2` ~ `_5`를 붙입니다.
+
+> ⚠️ `MASTODON_REDIRECT_URI`는 Mastodon 앱 설정에 등록한 **리다이렉트 URI**와 정확히 일치해야 합니다. 모든 서버가 동일한 콜백 URL을 사용할 수 있습니다.
 
 > ℹ️ `MASTODON_SERVER_NAME`은 선택사항입니다. 설정하면 로그인 버튼에 "마스토돈으로 로그인" 대신 설정한 이름이 표시됩니다. 미설정 시 기본값으로 "Mastodon으로 로그인"이 표시됩니다.
+
+> ℹ️ `MASTODON_ICON_URL`은 선택사항입니다. 설정하면 로그인 버튼과 마이페이지의 연동 버튼에서 기본 Mastodon 로고 대신 지정한 아이콘이 표시됩니다. SVG, PNG 등 이미지 형식을 지원합니다. 미설정 시 기본 Mastodon 로고가 사용됩니다.
 
 ## 4. 데이터베이스 마이그레이션
 
@@ -74,22 +106,26 @@ npm run init-db
    ```bash
    curl https://your-api-server.com/health
    ```
-   응답 예시:
+   응답 예시 (서버 2개 구성):
    ```json
    {
      "status": "ok",
-     "serverVersion": "0.9.0",
-     "minClientVersion": "0.9.0",
+     "serverVersion": "0.9.1",
+     "minClientVersion": "0.9.1",
      "xLoginEnabled": false,
      "mastodonLoginEnabled": true,
+     "mastodonServers": [
+       { "index": 0, "serverName": "마스토돈" },
+       { "index": 1, "serverName": "미스키", "iconUrl": "https://example.com/misskey-icon.png" }
+     ],
      "mastodonServerName": "마스토돈"
    }
    ```
-3. 로그인 페이지에 **Mastodon으로 로그인** 버튼이 표시되는지 확인합니다.
+3. 로그인 페이지에 각 Mastodon 서버별 로그인 버튼이 표시되는지 확인합니다.
 
 ## 6. 비활성화
 
-Mastodon 로그인을 비활성화하려면 `.env` 파일에서 `MASTODON_DOMAIN`, `MASTODON_CLIENT_ID`, `MASTODON_CLIENT_SECRET`, `MASTODON_REDIRECT_URI` 중 하나 이상을 제거하거나 비워두면 됩니다. 네 값이 모두 설정되어 있어야만 Mastodon 로그인이 활성화됩니다.
+Mastodon 로그인을 비활성화하려면 `.env` 파일에서 각 서버의 `MASTODON_DOMAIN`, `MASTODON_CLIENT_ID`, `MASTODON_CLIENT_SECRET`, `MASTODON_REDIRECT_URI` 중 하나 이상을 제거하거나 비워두면 됩니다. 네 값이 모두 설정되어 있어야만 해당 서버의 Mastodon 로그인이 활성화됩니다. 모든 서버가 비활성화되면 Mastodon 로그인 기능이 전체적으로 비활성화됩니다.
 
 서버에서 Mastodon API 환경변수가 미설정 상태이면:
 - `/health`의 `mastodonLoginEnabled`가 `false`로 반환됩니다.
@@ -98,12 +134,13 @@ Mastodon 로그인을 비활성화하려면 `.env` 파일에서 `MASTODON_DOMAIN
 ## OAuth 인증 플로우 요약
 
 ```
-사용자 → [Mastodon 로그인 버튼 클릭]
-       → 서버 GET /auth/mastodon/login (authorize URL + state 생성)
+사용자 → [Mastodon 로그인 버튼 클릭 (서버 N 선택)]
+       → 서버 GET /auth/mastodon/login?serverIndex=N (authorize URL + state 생성)
        → Mastodon 인증 페이지로 리다이렉트
        → 사용자 승인
        → /mastodon/callback?code=...&state=... 으로 리다이렉트
        → 클라이언트 POST /auth/mastodon/callback (code, state 전달)
+       → 서버: state에서 서버 인덱스 확인 → 해당 서버의 설정으로 처리
        → 서버: code → access_token 교환 (Mastodon API)
        → 서버: access_token으로 Mastodon 사용자 정보 조회 (verify_credentials)
        → 서버: DB에서 사용자 조회
@@ -118,5 +155,7 @@ Mastodon 로그인을 비활성화하려면 `.env` 파일에서 `MASTODON_DOMAIN
 - 요청하는 권한 범위(scope)는 `read:accounts`만으로 충분합니다.
 - Mastodon OAuth state는 10분 후 만료됩니다.
 - 처음 로그인하는 사용자는 이메일 주소를 직접 입력하고, 이용약관 및 개인정보처리방침에 동의해야 가입이 완료됩니다.
-- 하나의 Mastodon 서버만 연동할 수 있습니다. 여러 서버를 지원하려면 각 서버별로 별도의 Mastodon 앱을 생성하고 환경변수를 설정해야 합니다.
+- 최대 5개의 Mastodon 서버를 연동할 수 있습니다. 각 서버별로 별도의 Mastodon 앱을 생성하고 환경변수를 설정해야 합니다.
 - Mastodon ID는 `{user_id}@{domain}` 형식으로 저장되어 서버 간 고유성이 보장됩니다.
+- 모든 서버가 동일한 콜백 URL(`/mastodon/callback`)을 공유합니다. 서버 인덱스는 state 파라미터를 통해 전달됩니다.
+- 커스텀 아이콘(`MASTODON_ICON_URL`)은 SVG, PNG 등 이미지 형식을 지원하며, 높이 18px에 너비 자동(비율 유지)으로 표시됩니다.
