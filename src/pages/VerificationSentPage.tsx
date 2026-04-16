@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useConnection } from '../contexts/useConnection';
 import * as apiService from '../services/apiService';
@@ -12,8 +12,13 @@ export default function VerificationSentPage() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
+  useEffect(() => {
+    if (!email) {
+      navigate('/login');
+    }
+  }, [email, navigate]);
+
   if (!email) {
-    navigate('/login');
     return null;
   }
 

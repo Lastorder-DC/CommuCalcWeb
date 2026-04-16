@@ -54,14 +54,13 @@ export default function LoginPage() {
       await login(email, password, turnstileToken || undefined);
       navigate('/');
     } catch (err) {
-      const message = err instanceof Error ? err.message : '로그인에 실패했습니다.';
-      // 이메일 인증 필요 응답 처리
-      if (message.includes('이메일 인증이 완료되지 않았습니다')) {
+      // 이메일 인증 필요 응답 처리 (서버에서 needsVerification 메시지 반환)
+      if (err instanceof Error && err.message.includes('이메일 인증')) {
         sessionStorage.setItem('verification_email', email);
         navigate('/verification-sent');
         return;
       }
-      setError(message);
+      setError(err instanceof Error ? err.message : '로그인에 실패했습니다.');
     } finally {
       setLoading(false);
     }

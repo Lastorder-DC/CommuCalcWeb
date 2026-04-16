@@ -12,22 +12,30 @@ const router = Router();
 const SALT_ROUNDS = 12;
 
 /** 6자리 숫자 인증 코드 생성 */
-function generateCode() {
+function generateVerificationCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-/** URL-safe 랜덤 토큰 생성 */
-function generateToken64() {
+/** URL-safe 랜덤 토큰 생성 (32바이트 → 64자 hex 문자열) */
+function generateRandomToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
-/** 임시 비밀번호 생성 (12자, 영문+숫자+특수문자) */
+/**
+ * 임시 비밀번호 생성 (12자, 영문+숫자+특수문자).
+ * 혼동하기 쉬운 문자(l, I, 1, O, 0)를 제외합니다.
+ * rejection sampling으로 모듈러 바이어스를 방지합니다.
+ */
 function generateTempPassword() {
   const chars = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%';
+  const charsLen = chars.length;
   let result = '';
-  const bytes = crypto.randomBytes(12);
-  for (let i = 0; i < 12; i++) {
-    result += chars[bytes[i] % chars.length];
+  while (result.length < 12) {
+    const byte = crypto.randomBytes(1)[0];
+    // rejection sampling: 256을 charsLen으로 나눈 나머지 바이어스를 제거
+    if (byte < Math.floor(256 / charsLen) * charsLen) {
+      result += chars[byte % charsLen];
+    }
   }
   return result;
 }
@@ -76,8 +84,8 @@ router.post('/register', async (req, res) => {
     const userId = result.insertId;
 
     // 인증 토큰/코드 생성 및 저장
-    const code = generateCode();
-    const token = generateToken64();
+    const code = generateVerificationCode();
+    const token = generateRandomToken();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24시간
 
     await pool.execute(
@@ -178,8 +186,8 @@ router.post('/resend-verification', async (req, res) => {
     // 기존 토큰 삭제 후 새로 생성
     await pool.execute('DELETE FROM email_verification_tokens WHERE user_id = ?', [users[0].id]);
 
-    const code = generateCode();
-    const token = generateToken64();
+    const code = generateVerificationCode();
+    const token = generateRandomToken();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await pool.execute(
@@ -381,8 +389,8 @@ router.post('/request-email-change', authMiddleware, async (req, res) => {
     // 기존 토큰 삭제
     await pool.execute('DELETE FROM email_change_tokens WHERE user_id = ?', [req.user.id]);
 
-    const code = generateCode();
-    const token = generateToken64();
+    const code = generateVerificationCode();
+    const token = generateRandomToken();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await pool.execute(
@@ -498,7 +506,7 @@ router.post('/forgot-password', async (req, res) => {
 
     const tempPassword = generateTempPassword();
     const hashedTemp = await bcrypt.hash(tempPassword, SALT_ROUNDS);
-    const token = generateToken64();
+    const token = generateRandomToken();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1시간
 
     await pool.execute(
@@ -608,8 +616,8 @@ router.post('/complete-signup', async (req, res) => {
     const userId = result.insertId;
 
     // 인증 토큰/코드 생성
-    const code = generateCode();
-    const verificationToken = generateToken64();
+    const code = generateVerificationCode();
+    const verificationToken = generateRandomToken();
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await pool.execute(

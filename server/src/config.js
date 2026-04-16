@@ -38,7 +38,7 @@ function validateSmtpConfig() {
   }
 }
 
-// 서버 직접 실행 시에만 SMTP 검증 (테스트 환경 제외)
+// 서버 직접 실행 시에만 SMTP 검증 (테스트 환경에서는 실제 SMTP 서버가 없으므로 건너뜀)
 if (process.env.NODE_ENV !== 'test') {
   validateSmtpConfig();
 }
