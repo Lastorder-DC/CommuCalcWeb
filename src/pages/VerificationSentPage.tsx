@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useConnection } from '../contexts/useConnection';
 import Turnstile from '../components/Turnstile';
@@ -16,7 +16,6 @@ export default function VerificationSentPage() {
   // 캡차 관련 상태
   const [showTurnstile, setShowTurnstile] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const pendingTokenRef = useRef<string>('');
 
   useEffect(() => {
     if (!email) {
@@ -39,7 +38,6 @@ export default function VerificationSentPage() {
   }, [email]);
 
   const handleTurnstileVerify = useCallback((token: string) => {
-    pendingTokenRef.current = token;
     doResend(token);
   }, [doResend]);
 

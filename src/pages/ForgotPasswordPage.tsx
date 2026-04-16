@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, type FormEvent } from 'react';
+import { useState, useCallback, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useConnection } from '../contexts/useConnection';
 import Turnstile from '../components/Turnstile';
@@ -15,7 +15,6 @@ export default function ForgotPasswordPage() {
   // 캡차 관련 상태
   const [showTurnstile, setShowTurnstile] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const pendingTokenRef = useRef<string>('');
 
   const doForgotPassword = useCallback(async (turnstileToken?: string) => {
     setLoading(true);
@@ -32,7 +31,6 @@ export default function ForgotPasswordPage() {
   }, [email]);
 
   const handleTurnstileVerify = useCallback((token: string) => {
-    pendingTokenRef.current = token;
     doForgotPassword(token);
   }, [doForgotPassword]);
 

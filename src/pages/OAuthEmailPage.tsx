@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef, type FormEvent } from 'react';
+import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/useAuth';
 import { useConnection } from '../contexts/useConnection';
@@ -26,7 +26,6 @@ export default function OAuthEmailPage() {
   // 캡차 관련 상태
   const [showTurnstile, setShowTurnstile] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const pendingTokenRef = useRef<string>('');
 
   useEffect(() => {
     const raw = sessionStorage.getItem('oauth_signup');
@@ -79,7 +78,6 @@ export default function OAuthEmailPage() {
   }, [signupData, email, completeOAuthSignup, navigate]);
 
   const handleTurnstileVerify = useCallback((token: string) => {
-    pendingTokenRef.current = token;
     doCompleteSignup(token);
   }, [doCompleteSignup]);
 

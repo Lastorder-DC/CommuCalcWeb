@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, type FormEvent } from 'react';
+import { useState, useCallback, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { josa } from 'es-hangul';
 import { useAuth } from '../contexts/useAuth';
@@ -37,7 +37,6 @@ export default function LoginPage() {
   // 캡차 관련 상태: 버튼 누르면 캡차 표시 → 인증 완료 시 요청 전송
   const [showTurnstile, setShowTurnstile] = useState(false);
   const [verifying, setVerifying] = useState(false);
-  const pendingTokenRef = useRef<string>('');
 
   const doLogin = useCallback(async (turnstileToken?: string) => {
     setLoading(true);
@@ -59,7 +58,6 @@ export default function LoginPage() {
   }, [email, password, login, navigate]);
 
   const handleTurnstileVerify = useCallback((token: string) => {
-    pendingTokenRef.current = token;
     doLogin(token);
   }, [doLogin]);
 
