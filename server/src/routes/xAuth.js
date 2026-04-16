@@ -212,7 +212,7 @@ router.post('/callback', async (req, res) => {
 
     // Step 3: DB에서 X 계정으로 연결된 사용자 검색 또는 생성
     const [existingRows] = await pool.execute(
-      'SELECT id, email, username, password, mastodon_id FROM users WHERE x_id = ?',
+      'SELECT id, email, username, password, mastodon_id, email_verified FROM users WHERE x_id = ?',
       [xId],
     );
 
@@ -221,6 +221,12 @@ router.post('/callback', async (req, res) => {
     if (existingRows.length > 0) {
       // 기존 사용자 로그인 – 가짜 이메일(@x.user)인 경우에만 X에서 가져온 이메일로 업데이트
       const row = existingRows[0];
+
+      // 이메일 인증 확인
+      if (!row.email_verified) {
+        return res.status(403).json({ message: '이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요.', needsVerification: true, email: row.email });
+      }
+
       const isFakeEmail = row.email.endsWith('@x.user');
       const effectiveEmail = (isFakeEmail && userData.data.confirmed_email)
         ? userData.data.confirmed_email
