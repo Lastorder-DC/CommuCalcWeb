@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useRef, useCallback, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { josa } from 'es-hangul';
 import { useAuth } from '../contexts/useAuth';
@@ -31,30 +31,20 @@ export default function LoginPage() {
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!isOnline) {
-      setError('오프라인 모드에서는 로그인할 수 없습니다.');
-      return;
-    }
+  // 캡차 관련 상태: 버튼 누르면 캡차 표시 → 인증 완료 시 요청 전송
+  const [showTurnstile, setShowTurnstile] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const pendingTokenRef = useRef<string>('');
 
-    if (turnstileEnabled && !turnstileToken) {
-      setError('보안 인증을 완료해주세요.');
-      return;
-    }
-
-    setError('');
+  const doLogin = useCallback(async (turnstileToken?: string) => {
     setLoading(true);
-
     try {
-      await login(email, password, turnstileToken || undefined);
+      await login(email, password, turnstileToken);
       navigate('/');
     } catch (err) {
-      // 이메일 인증 필요 응답 처리 (서버에서 needsVerification 메시지 반환)
       if (err instanceof Error && err.message.includes('이메일 인증')) {
         sessionStorage.setItem('verification_email', email);
         navigate('/verification-sent');
@@ -63,7 +53,34 @@ export default function LoginPage() {
       setError(err instanceof Error ? err.message : '로그인에 실패했습니다.');
     } finally {
       setLoading(false);
+      setShowTurnstile(false);
+      setVerifying(false);
     }
+  }, [email, password, login, navigate]);
+
+  const handleTurnstileVerify = useCallback((token: string) => {
+    pendingTokenRef.current = token;
+    doLogin(token);
+  }, [doLogin]);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!isOnline) {
+      setError('오프라인 모드에서는 로그인할 수 없습니다.');
+      return;
+    }
+
+    setError('');
+
+    if (turnstileEnabled) {
+      // 캡차 표시 → 인증 대기
+      setShowTurnstile(true);
+      setVerifying(true);
+      return;
+    }
+
+    // Turnstile 비활성 시 바로 로그인
+    await doLogin();
   };
 
   const handleXLogin = async () => {
@@ -91,6 +108,7 @@ export default function LoginPage() {
   };
 
   const hasOAuthLogin = xLoginEnabled || mastodonLoginEnabled;
+  const isProcessing = loading || verifying;
 
   return (
     <div className="row justify-content-center" style={{ paddingTop: '10px' }}>
@@ -115,7 +133,7 @@ export default function LoginPage() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              disabled={!isOnline || loading}
+              disabled={!isOnline || isProcessing}
               autoComplete="email"
             />
           </div>
@@ -128,7 +146,7 @@ export default function LoginPage() {
               value={password}
               onChange={e => setPassword(e.target.value)}
               required
-              disabled={!isOnline || loading}
+              disabled={!isOnline || isProcessing}
               autoComplete="current-password"
             />
             <div className="form-text text-end">
@@ -136,12 +154,16 @@ export default function LoginPage() {
             </div>
           </div>
 
-          {turnstileEnabled && turnstileSiteKey && (
+          {showTurnstile && turnstileEnabled && turnstileSiteKey && (
             <div className="mb-3">
               <Turnstile
                 siteKey={turnstileSiteKey}
-                onVerify={setTurnstileToken}
-                onExpire={() => setTurnstileToken('')}
+                onVerify={handleTurnstileVerify}
+                onExpire={() => {
+                  setVerifying(false);
+                  setShowTurnstile(false);
+                  setError('보안 인증이 만료되었습니다. 다시 시도해주세요.');
+                }}
               />
             </div>
           )}
@@ -149,9 +171,9 @@ export default function LoginPage() {
           <button
             type="submit"
             className="btn btn-primary w-100"
-            disabled={!isOnline || loading || (turnstileEnabled && !turnstileToken)}
+            disabled={!isOnline || isProcessing}
           >
-            {loading ? '로그인 중...' : '로그인'}
+            {loading ? '로그인 중...' : verifying ? '인증중...' : '로그인'}
           </button>
         </form>
 
@@ -166,7 +188,7 @@ export default function LoginPage() {
                 type="button"
                 className="btn btn-dark w-100 d-flex align-items-center justify-content-center gap-2 mb-2"
                 onClick={handleXLogin}
-                disabled={!isOnline || loading}
+                disabled={!isOnline || isProcessing}
               >
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
                   <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
@@ -182,7 +204,7 @@ export default function LoginPage() {
                 className="btn w-100 d-flex align-items-center justify-content-center gap-2 mb-2"
                 style={{ backgroundColor: '#6364FF', color: '#fff', borderColor: '#6364FF' }}
                 onClick={() => handleMastodonLogin(server.index)}
-                disabled={!isOnline || loading}
+                disabled={!isOnline || isProcessing}
               >
                 <MastodonServerIcon server={server} />
                 {server.serverName ? `${josa(server.serverName, '으로/로')} 로그인` : 'Mastodon으로 로그인'}

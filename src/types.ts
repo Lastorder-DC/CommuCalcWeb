@@ -99,6 +99,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   username: string;
+  turnstileToken?: string;
 }
 
 /** API 인증 응답 */

@@ -25,8 +25,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(result.user);
   }, []);
 
-  const register = useCallback(async (email: string, password: string, username: string): Promise<{ needsVerification?: boolean }> => {
-    const result = await apiService.register({ email, password, username });
+  const register = useCallback(async (email: string, password: string, username: string, turnstileToken?: string): Promise<{ needsVerification?: boolean }> => {
+    const result = await apiService.register({ email, password, username, turnstileToken });
     if ('needsVerification' in result && result.needsVerification) {
       return { needsVerification: true };
     }
@@ -62,8 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     providerId: string,
     username: string,
     email: string,
+    turnstileToken?: string,
   ): Promise<{ needsVerification?: boolean }> => {
-    const result = await apiService.completeOAuthSignup(provider, providerId, username, email);
+    const result = await apiService.completeOAuthSignup(provider, providerId, username, email, turnstileToken);
     if ('needsVerification' in result && result.needsVerification) {
       return { needsVerification: true };
     }

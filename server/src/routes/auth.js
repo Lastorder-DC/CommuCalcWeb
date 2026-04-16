@@ -49,10 +49,16 @@ function generateJwtToken(user) {
   );
 }
 
-/** POST /auth/register – 회원가입 (이메일 인증 필요) */
+/** POST /auth/register – 회원가입 (이메일 인증 필요, Turnstile 검증 포함) */
 router.post('/register', async (req, res) => {
   try {
-    const { email, password, username } = req.body;
+    const { email, password, username, turnstileToken } = req.body;
+
+    // Turnstile 검증
+    const turnstileValid = await verifyTurnstile(turnstileToken, req.ip);
+    if (!turnstileValid) {
+      return res.status(403).json({ message: '보안 인증에 실패했습니다. 다시 시도해주세요.' });
+    }
 
     if (!email || !password || !username) {
       return res.status(400).json({ message: '이메일, 비밀번호, 닉네임을 모두 입력해주세요.' });
@@ -161,12 +167,18 @@ router.post('/verify-email', async (req, res) => {
   }
 });
 
-/** POST /auth/resend-verification – 인증 메일 재발송 */
+/** POST /auth/resend-verification – 인증 메일 재발송 (Turnstile 검증 포함) */
 router.post('/resend-verification', async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, turnstileToken } = req.body;
     if (!email) {
       return res.status(400).json({ message: '이메일을 입력해주세요.' });
+    }
+
+    // Turnstile 검증
+    const turnstileValid = await verifyTurnstile(turnstileToken, req.ip);
+    if (!turnstileValid) {
+      return res.status(403).json({ message: '보안 인증에 실패했습니다. 다시 시도해주세요.' });
     }
 
     const [users] = await pool.execute(
@@ -575,7 +587,13 @@ router.post('/reset-password', async (req, res) => {
  */
 router.post('/complete-signup', async (req, res) => {
   try {
-    const { provider, providerId, username, email } = req.body;
+    const { provider, providerId, username, email, turnstileToken } = req.body;
+
+    // Turnstile 검증
+    const turnstileValid = await verifyTurnstile(turnstileToken, req.ip);
+    if (!turnstileValid) {
+      return res.status(403).json({ message: '보안 인증에 실패했습니다. 다시 시도해주세요.' });
+    }
 
     if (!provider || !providerId || !username || !email) {
       return res.status(400).json({ message: '필수 정보가 누락되었습니다.' });

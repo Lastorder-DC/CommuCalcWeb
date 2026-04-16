@@ -278,10 +278,11 @@ export async function completeOAuthSignup(
   providerId: string,
   username: string,
   email: string,
+  turnstileToken?: string,
 ): Promise<AuthResponse | { message: string; needsVerification: true }> {
   const result = await apiRequest<AuthResponse | { message: string; needsVerification: true }>('/auth/complete-signup', {
     method: 'POST',
-    body: JSON.stringify({ provider, providerId, username, email }),
+    body: JSON.stringify({ provider, providerId, username, email, turnstileToken }),
   });
   if ('token' in result) {
     setStoredToken(result.token);
@@ -312,10 +313,10 @@ export async function verifyEmail(params: { token?: string; code?: string; email
 }
 
 /** 인증 메일 재발송 */
-export async function resendVerification(email: string): Promise<{ message: string }> {
+export async function resendVerification(email: string, turnstileToken?: string): Promise<{ message: string }> {
   return apiRequest<{ message: string }>('/auth/resend-verification', {
     method: 'POST',
-    body: JSON.stringify({ email }),
+    body: JSON.stringify({ email, turnstileToken }),
   });
 }
 

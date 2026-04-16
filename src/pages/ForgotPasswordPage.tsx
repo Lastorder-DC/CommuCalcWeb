@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState, useCallback, useRef, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { useConnection } from '../contexts/useConnection';
 import Turnstile from '../components/Turnstile';
@@ -8,10 +8,33 @@ export default function ForgotPasswordPage() {
   const { isOnline, turnstileEnabled, turnstileSiteKey } = useConnection();
 
   const [email, setEmail] = useState('');
-  const [turnstileToken, setTurnstileToken] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // 캡차 관련 상태
+  const [showTurnstile, setShowTurnstile] = useState(false);
+  const [verifying, setVerifying] = useState(false);
+  const pendingTokenRef = useRef<string>('');
+
+  const doForgotPassword = useCallback(async (turnstileToken?: string) => {
+    setLoading(true);
+    try {
+      const result = await apiService.forgotPassword(email, turnstileToken);
+      setMessage(result.message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '요청에 실패했습니다.');
+    } finally {
+      setLoading(false);
+      setShowTurnstile(false);
+      setVerifying(false);
+    }
+  }, [email]);
+
+  const handleTurnstileVerify = useCallback((token: string) => {
+    pendingTokenRef.current = token;
+    doForgotPassword(token);
+  }, [doForgotPassword]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -20,24 +43,19 @@ export default function ForgotPasswordPage() {
       return;
     }
 
-    if (turnstileEnabled && !turnstileToken) {
-      setError('보안 인증을 완료해주세요.');
+    setError('');
+    setMessage('');
+
+    if (turnstileEnabled) {
+      setShowTurnstile(true);
+      setVerifying(true);
       return;
     }
 
-    setError('');
-    setMessage('');
-    setLoading(true);
-
-    try {
-      const result = await apiService.forgotPassword(email, turnstileToken || undefined);
-      setMessage(result.message);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '요청에 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
+    await doForgotPassword();
   };
+
+  const isProcessing = loading || verifying;
 
   return (
     <div className="row justify-content-center" style={{ paddingTop: '10px' }}>
@@ -61,17 +79,21 @@ export default function ForgotPasswordPage() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              disabled={!isOnline || loading}
+              disabled={!isOnline || isProcessing}
               autoComplete="email"
             />
           </div>
 
-          {turnstileEnabled && turnstileSiteKey && (
+          {showTurnstile && turnstileEnabled && turnstileSiteKey && (
             <div className="mb-3">
               <Turnstile
                 siteKey={turnstileSiteKey}
-                onVerify={setTurnstileToken}
-                onExpire={() => setTurnstileToken('')}
+                onVerify={handleTurnstileVerify}
+                onExpire={() => {
+                  setVerifying(false);
+                  setShowTurnstile(false);
+                  setError('보안 인증이 만료되었습니다. 다시 시도해주세요.');
+                }}
               />
             </div>
           )}
@@ -79,9 +101,9 @@ export default function ForgotPasswordPage() {
           <button
             type="submit"
             className="btn btn-primary w-100"
-            disabled={!isOnline || loading || (turnstileEnabled && !turnstileToken)}
+            disabled={!isOnline || isProcessing}
           >
-            {loading ? '요청 중...' : '임시 비밀번호 발송'}
+            {loading ? '요청 중...' : verifying ? '인증중...' : '임시 비밀번호 발송'}
           </button>
         </form>
 
