@@ -20,6 +20,7 @@ describe('GET /health', () => {
       minClientVersion: config.minClientVersion,
       xLoginEnabled: config.xLoginEnabled,
       mastodonLoginEnabled: config.mastodonLoginEnabled,
+      turnstileEnabled: config.turnstileEnabled,
     });
   });
 
