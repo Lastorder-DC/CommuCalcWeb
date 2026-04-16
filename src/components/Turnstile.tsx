@@ -62,8 +62,8 @@ export default function Turnstile({ siteKey, onVerify, onExpire }: TurnstileProp
     if (widgetIdRef.current) {
       try {
         window.turnstile.remove(widgetIdRef.current);
-      } catch {
-        // ignore
+      } catch (err) {
+        console.warn('Failed to remove Turnstile widget:', err);
       }
     }
 
@@ -82,8 +82,8 @@ export default function Turnstile({ siteKey, onVerify, onExpire }: TurnstileProp
       if (widgetIdRef.current && window.turnstile) {
         try {
           window.turnstile.remove(widgetIdRef.current);
-        } catch {
-          // ignore
+        } catch (err) {
+          console.warn('Failed to remove Turnstile widget:', err);
         }
         widgetIdRef.current = null;
       }
