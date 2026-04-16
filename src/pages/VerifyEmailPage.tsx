@@ -1,0 +1,126 @@
+import { useState, useEffect, type FormEvent } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../contexts/useAuth';
+import { useConnection } from '../contexts/useConnection';
+import * as apiService from '../services/apiService';
+
+export default function VerifyEmailPage() {
+  const { updateUser } = useAuth();
+  const { isOnline } = useConnection();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  const tokenFromUrl = searchParams.get('token');
+  const emailFromStorage = sessionStorage.getItem('verification_email') || '';
+
+  const [code, setCode] = useState('');
+  const [email, setEmail] = useState(emailFromStorage);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  // URL에 토큰이 있으면 자동 인증 시도
+  useEffect(() => {
+    if (tokenFromUrl) {
+      setLoading(true);
+      apiService.verifyEmail({ token: tokenFromUrl })
+        .then((result) => {
+          updateUser(result.user);
+          sessionStorage.removeItem('verification_email');
+          navigate('/');
+        })
+        .catch((err) => {
+          setError(err instanceof Error ? err.message : '인증에 실패했습니다.');
+          setLoading(false);
+        });
+    }
+  }, [tokenFromUrl, navigate, updateUser]);
+
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
+    if (!code || !email) {
+      setError('이메일과 인증 코드를 입력해주세요.');
+      return;
+    }
+
+    setError('');
+    setLoading(true);
+    try {
+      const result = await apiService.verifyEmail({ code, email });
+      updateUser(result.user);
+      sessionStorage.removeItem('verification_email');
+      navigate('/');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '인증에 실패했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (tokenFromUrl && loading) {
+    return (
+      <div className="row justify-content-center" style={{ paddingTop: '10px' }}>
+        <div className="col-md-6 col-lg-4 text-center">
+          <h2 className="mb-4">이메일 인증 중...</h2>
+          <div className="spinner-border" role="status">
+            <span className="visually-hidden">인증 중...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="row justify-content-center" style={{ paddingTop: '10px' }}>
+      <div className="col-md-6 col-lg-4">
+        <h2 className="mb-4">이메일 인증</h2>
+
+        <p className="text-muted">이메일로 받은 인증 코드를 입력해주세요.</p>
+
+        {error && <div className="alert alert-danger">{error}</div>}
+
+        <form onSubmit={handleSubmit}>
+          <div className="mb-3">
+            <label htmlFor="email" className="form-label">이메일</label>
+            <input
+              id="email"
+              type="email"
+              className="form-control"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              required
+              disabled={!isOnline || loading}
+              autoComplete="email"
+            />
+          </div>
+          <div className="mb-3">
+            <label htmlFor="code" className="form-label">인증 코드</label>
+            <input
+              id="code"
+              type="text"
+              className="form-control text-center"
+              value={code}
+              onChange={e => setCode(e.target.value)}
+              required
+              maxLength={6}
+              pattern="[0-9]{6}"
+              placeholder="6자리 숫자"
+              disabled={!isOnline || loading}
+              style={{ fontSize: '1.5rem', letterSpacing: '4px' }}
+            />
+          </div>
+          <button
+            type="submit"
+            className="btn btn-primary w-100"
+            disabled={!isOnline || loading}
+          >
+            {loading ? '인증 중...' : '인증하기'}
+          </button>
+        </form>
+
+        <div className="mt-3 text-center">
+          <Link to="/login">로그인 페이지로 돌아가기</Link>
+        </div>
+      </div>
+    </div>
+  );
+}

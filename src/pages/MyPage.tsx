@@ -27,6 +27,12 @@ export default function MyPage() {
   const { isOnline, xLoginEnabled, mastodonLoginEnabled, mastodonServers } = useConnection();
   const navigate = useNavigate();
 
+  // 닉네임 변경
+  const [newUsername, setNewUsername] = useState('');
+  const [usernameError, setUsernameError] = useState('');
+  const [usernameSuccess, setUsernameSuccess] = useState('');
+  const [usernameLoading, setUsernameLoading] = useState(false);
+
   // 비밀번호 변경
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -62,6 +68,29 @@ export default function MyPage() {
   }
 
   const isXUser = user.email?.endsWith('@x.user');
+
+  const handleUsernameChange = async (e: FormEvent) => {
+    e.preventDefault();
+    setUsernameError('');
+    setUsernameSuccess('');
+
+    if (!/^[가-힣a-zA-Z0-9 ]{2,20}$/.test(newUsername) || newUsername !== newUsername.trim()) {
+      setUsernameError('닉네임은 2~20자의 한글·영문·숫자·띄어쓰기만 사용 가능합니다. (앞뒤 공백 불가)');
+      return;
+    }
+
+    setUsernameLoading(true);
+    try {
+      await apiService.changeUsername(newUsername);
+      await refreshUser();
+      setUsernameSuccess('닉네임이 변경되었습니다.');
+      setNewUsername('');
+    } catch (err) {
+      setUsernameError(err instanceof Error ? err.message : '닉네임 변경에 실패했습니다.');
+    } finally {
+      setUsernameLoading(false);
+    }
+  };
 
   const handlePasswordChange = async (e: FormEvent) => {
     e.preventDefault();
@@ -105,9 +134,8 @@ export default function MyPage() {
 
     setEmailLoading(true);
     try {
-      await apiService.changeEmail(newEmail);
-      await refreshUser();
-      setEmailSuccess('이메일이 변경되었습니다.');
+      await apiService.requestEmailChange(newEmail);
+      setEmailSuccess('변경할 이메일로 인증 메일이 발송되었습니다. 이메일을 확인해주세요.');
       setNewEmail('');
     } catch (err) {
       setEmailError(err instanceof Error ? err.message : '이메일 변경에 실패했습니다.');
@@ -226,6 +254,41 @@ export default function MyPage() {
           </div>
         </div>
 
+        {/* 닉네임 변경 */}
+        <div className="card mb-3">
+          <div className="card-header"><strong>닉네임 변경</strong></div>
+          <div className="card-body">
+            {usernameError && <div className="alert alert-danger py-2">{usernameError}</div>}
+            {usernameSuccess && <div className="alert alert-success py-2">{usernameSuccess}</div>}
+            <form onSubmit={handleUsernameChange}>
+              <div className="mb-3">
+                <label htmlFor="newUsername" className="form-label">새 닉네임</label>
+                <input
+                  id="newUsername"
+                  type="text"
+                  className="form-control"
+                  value={newUsername}
+                  onChange={e => setNewUsername(e.target.value)}
+                  required
+                  maxLength={20}
+                  pattern="[가-힣a-zA-Z0-9 ]{2,20}"
+                  disabled={!isOnline || usernameLoading}
+                  autoComplete="username"
+                  placeholder={user.username}
+                />
+                <div className="form-text">2~20자, 한글·영문·숫자·띄어쓰기만 사용 가능합니다.</div>
+              </div>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={!isOnline || usernameLoading}
+              >
+                {usernameLoading ? '변경 중...' : '닉네임 변경'}
+              </button>
+            </form>
+          </div>
+        </div>
+
         {/* 이메일 변경 (X 로그인 사용자 또는 일반 사용자) */}
         <div className="card mb-3">
           <div className="card-header"><strong>{isXUser ? '이메일 설정' : '이메일 변경'}</strong></div>
@@ -253,7 +316,7 @@ export default function MyPage() {
                 className="btn btn-primary"
                 disabled={!isOnline || emailLoading}
               >
-                {emailLoading ? '변경 중...' : (isXUser ? '이메일 설정' : '이메일 변경')}
+                {emailLoading ? '발송 중...' : (isXUser ? '이메일 설정' : '인증 메일 발송')}
               </button>
             </form>
           </div>

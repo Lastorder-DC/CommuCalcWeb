@@ -48,8 +48,13 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      await register(email, password, username);
-      navigate('/');
+      const result = await register(email, password, username);
+      if (result.needsVerification) {
+        sessionStorage.setItem('verification_email', email);
+        navigate('/verification-sent');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '회원가입에 실패했습니다.');
     } finally {

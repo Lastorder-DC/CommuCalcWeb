@@ -72,14 +72,19 @@ export default function OAuthEmailPage() {
     setLoading(true);
 
     try {
-      await completeOAuthSignup(
+      const result = await completeOAuthSignup(
         signupData.provider,
         signupData.providerId,
         signupData.username,
         email,
       );
       sessionStorage.removeItem('oauth_signup');
-      navigate('/');
+      if (result.needsVerification) {
+        sessionStorage.setItem('verification_email', email);
+        navigate('/verification-sent');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : '가입에 실패했습니다.');
     } finally {

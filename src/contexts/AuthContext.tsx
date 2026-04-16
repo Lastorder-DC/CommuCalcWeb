@@ -20,14 +20,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const result = await apiService.login({ email, password });
+  const login = useCallback(async (email: string, password: string, turnstileToken?: string) => {
+    const result = await apiService.login({ email, password, turnstileToken });
     setUser(result.user);
   }, []);
 
-  const register = useCallback(async (email: string, password: string, username: string) => {
+  const register = useCallback(async (email: string, password: string, username: string): Promise<{ needsVerification?: boolean }> => {
     const result = await apiService.register({ email, password, username });
-    setUser(result.user);
+    if ('needsVerification' in result && result.needsVerification) {
+      return { needsVerification: true };
+    }
+    if ('user' in result) {
+      setUser(result.user);
+    }
+    return {};
   }, []);
 
   const logout = useCallback(async () => {
@@ -56,9 +62,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     providerId: string,
     username: string,
     email: string,
-  ) => {
+  ): Promise<{ needsVerification?: boolean }> => {
     const result = await apiService.completeOAuthSignup(provider, providerId, username, email);
-    setUser(result.user);
+    if ('needsVerification' in result && result.needsVerification) {
+      return { needsVerification: true };
+    }
+    if ('user' in result) {
+      setUser(result.user);
+    }
+    return {};
   }, []);
 
   const refreshUser = useCallback(async () => {

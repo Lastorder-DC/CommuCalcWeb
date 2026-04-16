@@ -84,7 +84,7 @@ export async function testConnection(): Promise<HealthResponse | null> {
 }
 
 /** 로그인 */
-export async function login(data: LoginRequest): Promise<AuthResponse> {
+export async function login(data: LoginRequest & { turnstileToken?: string }): Promise<AuthResponse> {
   const result = await apiRequest<AuthResponse>('/auth/login', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -94,12 +94,14 @@ export async function login(data: LoginRequest): Promise<AuthResponse> {
 }
 
 /** 회원가입 */
-export async function register(data: RegisterRequest): Promise<AuthResponse> {
-  const result = await apiRequest<AuthResponse>('/auth/register', {
+export async function register(data: RegisterRequest): Promise<AuthResponse | { message: string; needsVerification: true }> {
+  const result = await apiRequest<AuthResponse | { message: string; needsVerification: true }>('/auth/register', {
     method: 'POST',
     body: JSON.stringify(data),
   });
-  setStoredToken(result.token);
+  if ('token' in result) {
+    setStoredToken(result.token);
+  }
   return result;
 }
 
@@ -194,6 +196,26 @@ export async function changeEmail(email: string): Promise<AuthResponse> {
   return result;
 }
 
+/** 이메일 변경 요청 (인증 메일 발송) */
+export async function requestEmailChange(email: string): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>('/auth/request-email-change', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+/** 이메일 변경 인증 완료 */
+export async function verifyEmailChange(params: { token?: string; code?: string; email?: string }): Promise<AuthResponse & { message: string }> {
+  const result = await apiRequest<AuthResponse & { message: string }>('/auth/verify-email-change', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+  if (result.token) {
+    setStoredToken(result.token);
+  }
+  return result;
+}
+
 /** 계정 삭제 */
 export async function deleteAccount(): Promise<void> {
   await apiRequest<void>('/auth/account', {
@@ -256,11 +278,59 @@ export async function completeOAuthSignup(
   providerId: string,
   username: string,
   email: string,
-): Promise<AuthResponse> {
-  const result = await apiRequest<AuthResponse>('/auth/complete-signup', {
+): Promise<AuthResponse | { message: string; needsVerification: true }> {
+  const result = await apiRequest<AuthResponse | { message: string; needsVerification: true }>('/auth/complete-signup', {
     method: 'POST',
     body: JSON.stringify({ provider, providerId, username, email }),
   });
+  if ('token' in result) {
+    setStoredToken(result.token);
+  }
+  return result;
+}
+
+/** 닉네임 변경 */
+export async function changeUsername(username: string): Promise<AuthResponse> {
+  const result = await apiRequest<AuthResponse>('/auth/username', {
+    method: 'PUT',
+    body: JSON.stringify({ username }),
+  });
   setStoredToken(result.token);
   return result;
+}
+
+/** 이메일 인증 */
+export async function verifyEmail(params: { token?: string; code?: string; email?: string }): Promise<AuthResponse> {
+  const result = await apiRequest<AuthResponse>('/auth/verify-email', {
+    method: 'POST',
+    body: JSON.stringify(params),
+  });
+  if (result.token) {
+    setStoredToken(result.token);
+  }
+  return result;
+}
+
+/** 인증 메일 재발송 */
+export async function resendVerification(email: string): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>('/auth/resend-verification', {
+    method: 'POST',
+    body: JSON.stringify({ email }),
+  });
+}
+
+/** 비밀번호 찾기 */
+export async function forgotPassword(email: string, turnstileToken?: string): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>('/auth/forgot-password', {
+    method: 'POST',
+    body: JSON.stringify({ email, turnstileToken }),
+  });
+}
+
+/** 임시 비밀번호로 비밀번호 재설정 */
+export async function resetPassword(token: string): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>('/auth/reset-password', {
+    method: 'POST',
+    body: JSON.stringify({ token }),
+  });
 }
