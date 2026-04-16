@@ -41,6 +41,11 @@ const MyPage = lazyWithReload(() => import('./pages/MyPage'));
 const XCallbackPage = lazyWithReload(() => import('./pages/XCallbackPage'));
 const MastodonCallbackPage = lazyWithReload(() => import('./pages/MastodonCallbackPage'));
 const OAuthEmailPage = lazyWithReload(() => import('./pages/OAuthEmailPage'));
+const VerificationSentPage = lazyWithReload(() => import('./pages/VerificationSentPage'));
+const VerifyEmailPage = lazyWithReload(() => import('./pages/VerifyEmailPage'));
+const VerifyEmailChangePage = lazyWithReload(() => import('./pages/VerifyEmailChangePage'));
+const ForgotPasswordPage = lazyWithReload(() => import('./pages/ForgotPasswordPage'));
+const ResetPasswordPage = lazyWithReload(() => import('./pages/ResetPasswordPage'));
 
 export default function App() {
   return (
@@ -64,6 +69,11 @@ export default function App() {
                 <Route path="/x/callback" element={<XCallbackPage />} />
                 <Route path="/mastodon/callback" element={<MastodonCallbackPage />} />
                 <Route path="/oauth/email" element={<OAuthEmailPage />} />
+                <Route path="/verification-sent" element={<VerificationSentPage />} />
+                <Route path="/verify-email" element={<VerifyEmailPage />} />
+                <Route path="/verify-email-change" element={<VerifyEmailChangePage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
               </Route>
             </Routes>
           </Suspense>

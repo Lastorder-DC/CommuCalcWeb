@@ -14,6 +14,10 @@ export interface ConnectionContextType {
   mastodonLoginEnabled: boolean;
   /** 구성된 Mastodon 서버 목록 */
   mastodonServers: MastodonServerInfo[];
+  /** Turnstile 활성화 여부 */
+  turnstileEnabled: boolean;
+  /** Turnstile 사이트 키 */
+  turnstileSiteKey: string;
   /** 연결 재시도 */
   retry: () => void;
 }

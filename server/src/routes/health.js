@@ -11,7 +11,12 @@ router.get('/', (_req, res) => {
     minClientVersion: config.minClientVersion,
     xLoginEnabled: config.xLoginEnabled,
     mastodonLoginEnabled: config.mastodonLoginEnabled,
+    turnstileEnabled: config.turnstileEnabled,
   };
+
+  if (config.turnstileEnabled) {
+    response.turnstileSiteKey = config.turnstile.siteKey;
+  }
 
   if (config.mastodonLoginEnabled) {
     response.mastodonServers = config.mastodonServers.map((s, index) => ({

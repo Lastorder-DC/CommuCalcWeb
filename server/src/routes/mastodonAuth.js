@@ -144,7 +144,7 @@ router.post('/callback', async (req, res) => {
 
     // Step 3: DB에서 Mastodon 계정으로 연결된 사용자 검색 또는 생성
     const [existingRows] = await pool.execute(
-      'SELECT id, email, username, password, x_id, mastodon_id FROM users WHERE mastodon_id = ?',
+      'SELECT id, email, username, password, x_id, mastodon_id, email_verified FROM users WHERE mastodon_id = ?',
       [mastodonId],
     );
 
@@ -153,6 +153,12 @@ router.post('/callback', async (req, res) => {
     if (existingRows.length > 0) {
       // 기존 사용자 로그인
       const row = existingRows[0];
+
+      // 이메일 인증 확인
+      if (!row.email_verified) {
+        return res.status(403).json({ message: '이메일 인증이 완료되지 않았습니다. 이메일을 확인해주세요.', needsVerification: true, email: row.email });
+      }
+
       user = {
         id: String(row.id),
         email: row.email,

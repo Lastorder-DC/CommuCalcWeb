@@ -134,6 +134,10 @@ export interface HealthResponse {
   mastodonServerName?: string;
   /** 구성된 Mastodon 서버 목록 */
   mastodonServers?: MastodonServerInfo[];
+  /** Cloudflare Turnstile 활성화 여부 */
+  turnstileEnabled?: boolean;
+  /** Turnstile 사이트 키 */
+  turnstileSiteKey?: string;
 }
 
 /** OAuth 가입 미완료 응답 (이메일 입력 필요) */
@@ -148,3 +152,16 @@ export interface OAuthNeedsEmailResponse {
 
 /** OAuth 콜백 응답 (로그인 성공 또는 이메일 입력 필요) */
 export type OAuthCallbackResponse = AuthResponse | OAuthNeedsEmailResponse;
+
+/** 회원가입/OAuth 가입 응답 (이메일 인증 필요) */
+export interface NeedsVerificationResponse {
+  message: string;
+  needsVerification: true;
+}
+
+/** 로그인 실패 응답 (이메일 인증 필요) */
+export interface LoginNeedsVerificationResponse {
+  message: string;
+  needsVerification: true;
+  email: string;
+}

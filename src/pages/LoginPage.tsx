@@ -4,6 +4,7 @@ import { josa } from 'es-hangul';
 import { useAuth } from '../contexts/useAuth';
 import { useConnection } from '../contexts/useConnection';
 import { getXLoginUrl, getMastodonLoginUrl } from '../services/apiService';
+import Turnstile from '../components/Turnstile';
 import type { MastodonServerInfo } from '../types';
 
 /** 기본 Mastodon SVG 아이콘 */
@@ -25,11 +26,12 @@ function MastodonServerIcon({ server }: { server: MastodonServerInfo }) {
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const { isOnline, xLoginEnabled, mastodonLoginEnabled, mastodonServers } = useConnection();
+  const { isOnline, xLoginEnabled, mastodonLoginEnabled, mastodonServers, turnstileEnabled, turnstileSiteKey } = useConnection();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [turnstileToken, setTurnstileToken] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -40,13 +42,24 @@ export default function LoginPage() {
       return;
     }
 
+    if (turnstileEnabled && !turnstileToken) {
+      setError('보안 인증을 완료해주세요.');
+      return;
+    }
+
     setError('');
     setLoading(true);
 
     try {
-      await login(email, password);
+      await login(email, password, turnstileToken || undefined);
       navigate('/');
     } catch (err) {
+      // 이메일 인증 필요 응답 처리 (서버에서 needsVerification 메시지 반환)
+      if (err instanceof Error && err.message.includes('이메일 인증')) {
+        sessionStorage.setItem('verification_email', email);
+        navigate('/verification-sent');
+        return;
+      }
       setError(err instanceof Error ? err.message : '로그인에 실패했습니다.');
     } finally {
       setLoading(false);
@@ -118,11 +131,25 @@ export default function LoginPage() {
               disabled={!isOnline || loading}
               autoComplete="current-password"
             />
+            <div className="form-text text-end">
+              <Link to="/forgot-password">비밀번호를 잊으셨나요?</Link>
+            </div>
           </div>
+
+          {turnstileEnabled && turnstileSiteKey && (
+            <div className="mb-3">
+              <Turnstile
+                siteKey={turnstileSiteKey}
+                onVerify={setTurnstileToken}
+                onExpire={() => setTurnstileToken('')}
+              />
+            </div>
+          )}
+
           <button
             type="submit"
             className="btn btn-primary w-100"
-            disabled={!isOnline || loading}
+            disabled={!isOnline || loading || (turnstileEnabled && !turnstileToken)}
           >
             {loading ? '로그인 중...' : '로그인'}
           </button>

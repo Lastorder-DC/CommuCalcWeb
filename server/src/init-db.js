@@ -75,6 +75,18 @@ async function initDatabase() {
       console.log("'users' 테이블에 'mastodon_id' 컬럼이 추가되었습니다.");
     }
 
+    // 기존 테이블에 email_verified 컬럼이 없으면 추가하고, 기존 사용자는 인증된 것으로 설정
+    const [emailVerifiedCols] = await connection.execute(
+      `SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'email_verified'`,
+      [config.db.database],
+    );
+    if (emailVerifiedCols.length === 0) {
+      await connection.execute('ALTER TABLE users ADD COLUMN email_verified TINYINT(1) NOT NULL DEFAULT 0 AFTER mastodon_id');
+      // 기존 가입 사용자는 이메일 인증 완료 처리
+      await connection.execute('UPDATE users SET email_verified = 1');
+      console.log("'users' 테이블에 'email_verified' 컬럼이 추가되었습니다. (기존 사용자는 인증 완료 처리)");
+    }
+
     // user_data 테이블
     await connection.execute(`
       CREATE TABLE IF NOT EXISTS user_data (
@@ -86,6 +98,55 @@ async function initDatabase() {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
     `);
     console.log("테이블 'user_data'가 준비되었습니다.");
+
+    // email_verification_tokens 테이블
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS email_verification_tokens (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id BIGINT UNSIGNED NOT NULL,
+        token VARCHAR(64) NOT NULL,
+        code VARCHAR(6) NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_token (token),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_email_verification_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log("테이블 'email_verification_tokens'가 준비되었습니다.");
+
+    // email_change_tokens 테이블
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS email_change_tokens (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id BIGINT UNSIGNED NOT NULL,
+        new_email VARCHAR(255) NOT NULL,
+        token VARCHAR(64) NOT NULL,
+        code VARCHAR(6) NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_token (token),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_email_change_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log("테이블 'email_change_tokens'가 준비되었습니다.");
+
+    // password_reset_tokens 테이블
+    await connection.execute(`
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+        user_id BIGINT UNSIGNED NOT NULL,
+        token VARCHAR(64) NOT NULL,
+        temp_password VARCHAR(255) NOT NULL,
+        expires_at TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_token (token),
+        INDEX idx_user_id (user_id),
+        CONSTRAINT fk_password_reset_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+    console.log("테이블 'password_reset_tokens'가 준비되었습니다.");
 
     console.log('\n데이터베이스 초기화가 완료되었습니다.');
   } catch (err) {
