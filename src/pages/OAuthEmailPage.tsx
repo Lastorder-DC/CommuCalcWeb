@@ -1,7 +1,8 @@
-import { useState, useEffect, type FormEvent } from 'react';
+import { useState, useEffect, useCallback, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/useAuth';
 import { useConnection } from '../contexts/useConnection';
+import Turnstile from '../components/Turnstile';
 
 interface OAuthSignupData {
   provider: 'x' | 'mastodon';
@@ -12,7 +13,7 @@ interface OAuthSignupData {
 
 export default function OAuthEmailPage() {
   const { completeOAuthSignup } = useAuth();
-  const { isOnline } = useConnection();
+  const { isOnline, turnstileEnabled, turnstileSiteKey } = useConnection();
   const navigate = useNavigate();
 
   const [signupData, setSignupData] = useState<OAuthSignupData | null>(null);
@@ -21,6 +22,10 @@ export default function OAuthEmailPage() {
   const [agreePrivacy, setAgreePrivacy] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // 캡차 관련 상태
+  const [showTurnstile, setShowTurnstile] = useState(false);
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     const raw = sessionStorage.getItem('oauth_signup');
@@ -44,6 +49,37 @@ export default function OAuthEmailPage() {
       navigate('/login');
     }
   }, [navigate]);
+
+  const doCompleteSignup = useCallback(async (turnstileToken?: string) => {
+    if (!signupData) return;
+    setLoading(true);
+    try {
+      const result = await completeOAuthSignup(
+        signupData.provider,
+        signupData.providerId,
+        signupData.username,
+        email,
+        turnstileToken,
+      );
+      sessionStorage.removeItem('oauth_signup');
+      if (result.needsVerification) {
+        sessionStorage.setItem('verification_email', email);
+        navigate('/verification-sent');
+      } else {
+        navigate('/');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '가입에 실패했습니다.');
+    } finally {
+      setLoading(false);
+      setShowTurnstile(false);
+      setVerifying(false);
+    }
+  }, [signupData, email, completeOAuthSignup, navigate]);
+
+  const handleTurnstileVerify = useCallback((token: string) => {
+    doCompleteSignup(token);
+  }, [doCompleteSignup]);
 
   if (!signupData) {
     return null;
@@ -69,28 +105,17 @@ export default function OAuthEmailPage() {
     }
 
     setError('');
-    setLoading(true);
 
-    try {
-      const result = await completeOAuthSignup(
-        signupData.provider,
-        signupData.providerId,
-        signupData.username,
-        email,
-      );
-      sessionStorage.removeItem('oauth_signup');
-      if (result.needsVerification) {
-        sessionStorage.setItem('verification_email', email);
-        navigate('/verification-sent');
-      } else {
-        navigate('/');
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : '가입에 실패했습니다.');
-    } finally {
-      setLoading(false);
+    if (turnstileEnabled) {
+      setShowTurnstile(true);
+      setVerifying(true);
+      return;
     }
+
+    await doCompleteSignup();
   };
+
+  const isProcessing = loading || verifying;
 
   return (
     <div className="row justify-content-center" style={{ paddingTop: '10px' }}>
@@ -118,7 +143,7 @@ export default function OAuthEmailPage() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              disabled={!isOnline || loading}
+              disabled={!isOnline || isProcessing}
               autoComplete="email"
               placeholder="example@email.com"
             />
@@ -132,7 +157,7 @@ export default function OAuthEmailPage() {
                 id="agreeTerms"
                 checked={agreeTerms}
                 onChange={e => setAgreeTerms(e.target.checked)}
-                disabled={!isOnline || loading}
+                disabled={!isOnline || isProcessing}
               />
               <label className="form-check-label" htmlFor="agreeTerms">
                 <Link to="/terms" target="_blank" rel="noopener noreferrer">이용약관</Link>에 동의합니다.
@@ -147,7 +172,7 @@ export default function OAuthEmailPage() {
                 id="agreePrivacy"
                 checked={agreePrivacy}
                 onChange={e => setAgreePrivacy(e.target.checked)}
-                disabled={!isOnline || loading}
+                disabled={!isOnline || isProcessing}
               />
               <label className="form-check-label" htmlFor="agreePrivacy">
                 <Link to="/privacy" target="_blank" rel="noopener noreferrer">개인정보처리방침</Link>에 동의합니다.
@@ -155,12 +180,26 @@ export default function OAuthEmailPage() {
             </div>
           </div>
 
+          {showTurnstile && turnstileEnabled && turnstileSiteKey && (
+            <div className="mb-3">
+              <Turnstile
+                siteKey={turnstileSiteKey}
+                onVerify={handleTurnstileVerify}
+                onExpire={() => {
+                  setVerifying(false);
+                  setShowTurnstile(false);
+                  setError('보안 인증이 만료되었습니다. 다시 시도해주세요.');
+                }}
+              />
+            </div>
+          )}
+
           <button
             type="submit"
             className="btn btn-primary w-100"
-            disabled={!isOnline || loading || !agreeTerms || !agreePrivacy}
+            disabled={!isOnline || isProcessing || !agreeTerms || !agreePrivacy}
           >
-            {loading ? '가입 중...' : '가입 완료'}
+            {loading ? '가입 중...' : verifying ? '인증중...' : '가입 완료'}
           </button>
         </form>
 

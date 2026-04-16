@@ -26,7 +26,7 @@ function createApp() {
     credentials: true,
   }));
 
-  // 요청 속도 제한
+  // 요청 속도 제한 (전체)
   const limiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15분
     max: 100,
@@ -35,6 +35,20 @@ function createApp() {
     message: { message: '요청이 너무 많습니다. 잠시 후 다시 시도해주세요.' },
   });
   app.use(limiter);
+
+  // 이메일 발송을 유발하는 엔드포인트에 대한 엄격한 속도 제한
+  const emailRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15분
+    max: 5, // IP당 15분에 5회
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { message: '이메일 관련 요청이 너무 많습니다. 15분 후 다시 시도해주세요.' },
+  });
+  app.use('/auth/register', emailRateLimiter);
+  app.use('/auth/forgot-password', emailRateLimiter);
+  app.use('/auth/complete-signup', emailRateLimiter);
+  app.use('/auth/resend-verification', emailRateLimiter);
+  app.use('/auth/request-email-change', emailRateLimiter);
 
   // JSON 파싱 (최대 1MB)
   app.use(express.json({ limit: '1mb' }));
