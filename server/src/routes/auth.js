@@ -11,6 +11,17 @@ const { verifyTurnstile } = require('../turnstile');
 const router = Router();
 const SALT_ROUNDS = 12;
 
+/**
+ * 이메일 형식 검증용 정규식.
+ * RFC 5322를 엄밀히 따르진 않지만 실사용 가능한 수준으로 제한합니다.
+ */
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** 이메일 형식이 올바르고 허용된 길이인지 검사합니다. */
+function isValidEmail(value) {
+  return typeof value === 'string' && value.length <= 254 && EMAIL_REGEX.test(value);
+}
+
 /** 6자리 숫자 인증 코드 생성 */
 function generateVerificationCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -62,6 +73,10 @@ router.post('/register', async (req, res) => {
 
     if (!email || !password || !username) {
       return res.status(400).json({ message: '이메일, 비밀번호, 닉네임을 모두 입력해주세요.' });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: '올바른 이메일 형식이 아닙니다.' });
     }
 
     if (!/^[가-힣a-zA-Z0-9 ]{2,20}$/.test(username) || username !== username.trim()) {
@@ -173,6 +188,11 @@ router.post('/resend-verification', async (req, res) => {
     const { email, turnstileToken } = req.body;
     if (!email) {
       return res.status(400).json({ message: '이메일을 입력해주세요.' });
+    }
+
+    if (!isValidEmail(email)) {
+      // 보안상 이메일 형식이 잘못되더라도 성공과 같은 응답을 반환
+      return res.json({ message: '등록된 이메일이라면 인증 메일이 발송됩니다.' });
     }
 
     // Turnstile 검증
@@ -389,6 +409,10 @@ router.post('/request-email-change', authMiddleware, async (req, res) => {
       return res.status(400).json({ message: '이메일을 입력해주세요.' });
     }
 
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: '올바른 이메일 형식이 아닙니다.' });
+    }
+
     // 이메일 중복 확인
     const [existing] = await pool.execute(
       'SELECT id FROM users WHERE email = ? AND id != ?',
@@ -495,6 +519,11 @@ router.post('/forgot-password', async (req, res) => {
       return res.status(400).json({ message: '이메일을 입력해주세요.' });
     }
 
+    if (!isValidEmail(email)) {
+      // 보안상 이메일 형식이 잘못되더라도 성공과 같은 응답을 반환
+      return res.json({ message: '등록된 이메일이라면 임시 비밀번호가 발송됩니다.' });
+    }
+
     // Turnstile 검증
     const turnstileValid = await verifyTurnstile(turnstileToken, req.ip);
     if (!turnstileValid) {
@@ -597,6 +626,10 @@ router.post('/complete-signup', async (req, res) => {
 
     if (!provider || !providerId || !username || !email) {
       return res.status(400).json({ message: '필수 정보가 누락되었습니다.' });
+    }
+
+    if (!isValidEmail(email)) {
+      return res.status(400).json({ message: '올바른 이메일 형식이 아닙니다.' });
     }
 
     if (!['x', 'mastodon'].includes(provider)) {

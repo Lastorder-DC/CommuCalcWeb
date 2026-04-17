@@ -166,3 +166,21 @@ export interface LoginNeedsVerificationResponse {
   needsVerification: true;
   email: string;
 }
+
+/** Changelog 버전/날짜 엔트리 */
+export interface ChangelogEntry {
+  /** 시맨틱 버전. 태그 없는 초기 변경사항은 null */
+  version: string | null;
+  /** YYYY-MM-DD. 없으면 null */
+  date: string | null;
+  /** 섹션별(Added/Changed/Fixed 등) 항목 리스트 */
+  sections: Record<string, string[]>;
+}
+
+/** Changelog 전체 JSON 구조 */
+export interface ChangelogData {
+  title: string | null;
+  intro: string;
+  generatedAt: string;
+  entries: ChangelogEntry[];
+}

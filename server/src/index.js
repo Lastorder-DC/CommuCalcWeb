@@ -10,6 +10,7 @@ const xAuthRouter = require('./routes/xAuth');
 const mastodonAuthRouter = require('./routes/mastodonAuth');
 const dataRouter = require('./routes/data');
 const legalRouter = require('./routes/legal');
+const changelogRouter = require('./routes/changelog');
 
 function createApp() {
   const app = express();
@@ -46,6 +47,7 @@ function createApp() {
   });
   app.use('/auth/register', emailRateLimiter);
   app.use('/auth/forgot-password', emailRateLimiter);
+  app.use('/auth/reset-password', emailRateLimiter);
   app.use('/auth/complete-signup', emailRateLimiter);
   app.use('/auth/resend-verification', emailRateLimiter);
   app.use('/auth/request-email-change', emailRateLimiter);
@@ -60,6 +62,7 @@ function createApp() {
   app.use('/auth/mastodon', mastodonAuthRouter);
   app.use('/data', dataRouter);
   app.use('/legal', legalRouter);
+  app.use('/changelog', changelogRouter);
 
   // 404 처리
   app.use((_req, res) => {

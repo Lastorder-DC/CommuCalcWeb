@@ -46,6 +46,9 @@ const VerifyEmailPage = lazyWithReload(() => import('./pages/VerifyEmailPage'));
 const VerifyEmailChangePage = lazyWithReload(() => import('./pages/VerifyEmailChangePage'));
 const ForgotPasswordPage = lazyWithReload(() => import('./pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazyWithReload(() => import('./pages/ResetPasswordPage'));
+const InfoPage = lazyWithReload(() => import('./pages/InfoPage'));
+const ChangelogPage = lazyWithReload(() => import('./pages/ChangelogPage'));
+const ServerChangelogPage = lazyWithReload(() => import('./pages/ServerChangelogPage'));
 
 export default function App() {
   return (
@@ -74,6 +77,9 @@ export default function App() {
                 <Route path="/verify-email-change" element={<VerifyEmailChangePage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
+                <Route path="/info" element={<InfoPage />} />
+                <Route path="/changelog" element={<ChangelogPage />} />
+                <Route path="/server-changelog" element={<ServerChangelogPage />} />
               </Route>
             </Routes>
           </Suspense>

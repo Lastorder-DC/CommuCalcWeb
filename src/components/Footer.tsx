@@ -12,6 +12,7 @@ export default function Footer() {
           <div className="col-md-6 text-md-end">
             <Link to="/terms" className="text-light me-3">이용약관</Link>
             <Link to="/privacy" className="text-light me-3">개인정보처리방침</Link>
+            <Link to="/info" className="text-light me-3">정보</Link>
             <Link to="/settings" className="text-light">설정</Link>
           </div>
         </div>

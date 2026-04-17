@@ -38,19 +38,33 @@ function validateSmtpConfig() {
   }
 }
 
-// 서버 직접 실행 시에만 SMTP 검증 (테스트 환경에서는 실제 SMTP 서버가 없으므로 건너뜀)
+/**
+ * 프로덕션 환경에서 JWT_SECRET이 기본값(또는 미설정)인 경우 서버 구동을 중단합니다.
+ * 기본값으로 실행되면 토큰이 위조 가능해지는 보안 위험이 있습니다.
+ */
+function validateJwtConfig() {
+  if (process.env.NODE_ENV !== 'production') return;
+  const secret = process.env.JWT_SECRET;
+  if (!secret || secret === 'change-this-secret') {
+    console.error('[FATAL] 프로덕션 환경에서는 JWT_SECRET 환경변수를 반드시 안전한 값으로 설정해야 합니다.');
+    process.exit(1);
+  }
+}
+
+// 서버 직접 실행 시에만 검증 (테스트 환경에서는 실제 값이 없으므로 건너뜀)
 if (process.env.NODE_ENV !== 'test') {
   validateSmtpConfig();
+  validateJwtConfig();
 }
 
 module.exports = {
   port: parseInt(process.env.PORT, 10) || 3000,
 
   /** 서버 버전 */
-  serverVersion: '1.1.1',
+  serverVersion: '1.1.2',
 
   /** 지원하는 최소 클라이언트 버전 */
-  minClientVersion: '1.1.1',
+  minClientVersion: '1.1.2',
 
   db: {
     host: process.env.DB_HOST || 'localhost',
