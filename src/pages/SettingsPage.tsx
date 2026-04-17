@@ -1,9 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { getApiUrl, setApiUrl, DEFAULT_API_URL } from '../config';
 import { useConnection } from '../contexts/useConnection';
+import { useTheme } from '../contexts/useTheme';
+import type { ThemeMode } from '../contexts/ThemeContextDef';
 
 export default function SettingsPage() {
   const { isOnline, isChecking, retry } = useConnection();
+  const { themeMode, setThemeMode } = useTheme();
   const [apiUrl, setApiUrlState] = useState(getApiUrl());
   const [saved, setSaved] = useState(false);
 
@@ -24,10 +27,41 @@ export default function SettingsPage() {
     retry();
   };
 
+  const themeOptions: { value: ThemeMode; label: string; description: string }[] = [
+    { value: 'auto', label: '자동', description: '시스템 설정을 따릅니다.' },
+    { value: 'light', label: '라이트', description: '항상 밝은 테마를 사용합니다.' },
+    { value: 'dark', label: '다크', description: '항상 어두운 테마를 사용합니다.' },
+  ];
+
   return (
     <div className="row" style={{ paddingTop: '10px' }}>
       <div className="col-md-8">
         <h2>설정</h2>
+
+        <div className="card mb-3">
+          <div className="card-header"><strong>기본 테마</strong></div>
+          <div className="card-body">
+            <div role="radiogroup" aria-label="기본 테마 선택">
+              {themeOptions.map(opt => (
+                <div className="form-check" key={opt.value}>
+                  <input
+                    className="form-check-input"
+                    type="radio"
+                    name="themeMode"
+                    id={`themeMode-${opt.value}`}
+                    value={opt.value}
+                    checked={themeMode === opt.value}
+                    onChange={() => setThemeMode(opt.value)}
+                  />
+                  <label className="form-check-label" htmlFor={`themeMode-${opt.value}`}>
+                    <strong>{opt.label}</strong>
+                    <span className="text-muted ms-2"><small>{opt.description}</small></span>
+                  </label>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
 
         <div className="card mb-3">
           <div className="card-header"><strong>API 서버 설정</strong></div>

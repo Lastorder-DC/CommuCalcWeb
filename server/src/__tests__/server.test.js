@@ -50,6 +50,21 @@ describe('GET /legal/privacy', () => {
   });
 });
 
+describe('GET /changelog', () => {
+  it('returns parsed changelog JSON with entries', async () => {
+    const res = await request(app).get('/changelog');
+    expect(res.status).toBe(200);
+    expect(res.body).toHaveProperty('entries');
+    expect(Array.isArray(res.body.entries)).toBe(true);
+    expect(res.body.entries.length).toBeGreaterThan(0);
+    // 최신 엔트리는 버전 또는 날짜를 가져야 함
+    const first = res.body.entries[0];
+    expect(first.version || first.date).toBeTruthy();
+    // 섹션은 객체 형태
+    expect(typeof first.sections).toBe('object');
+  });
+});
+
 describe('404 handling', () => {
   it('returns 404 for unknown routes', async () => {
     const res = await request(app).get('/nonexistent');

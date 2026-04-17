@@ -18,14 +18,15 @@ interface TurnstileProps {
 
 let scriptLoaded = false;
 let scriptLoading = false;
-const loadCallbacks: (() => void)[] = [];
+type Callback = { resolve: () => void; reject: (err: Error) => void };
+const loadCallbacks: Callback[] = [];
 
 function loadTurnstileScript(): Promise<void> {
   if (scriptLoaded) return Promise.resolve();
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     if (scriptLoading) {
-      loadCallbacks.push(resolve);
+      loadCallbacks.push({ resolve, reject });
       return;
     }
 
@@ -37,7 +38,16 @@ function loadTurnstileScript(): Promise<void> {
       scriptLoaded = true;
       scriptLoading = false;
       resolve();
-      loadCallbacks.forEach(cb => cb());
+      loadCallbacks.forEach(cb => cb.resolve());
+      loadCallbacks.length = 0;
+    };
+    script.onerror = () => {
+      // 실패 시 로딩 상태 초기화하여 이후 재시도가 가능하도록 한다.
+      scriptLoading = false;
+      script.remove();
+      const err = new Error('Turnstile 스크립트 로드 실패');
+      reject(err);
+      loadCallbacks.forEach(cb => cb.reject(err));
       loadCallbacks.length = 0;
     };
     document.head.appendChild(script);
@@ -54,7 +64,12 @@ export default function Turnstile({ siteKey, onVerify, onExpire }: TurnstileProp
   onExpireRef.current = onExpire;
 
   const renderWidget = useCallback(async () => {
-    await loadTurnstileScript();
+    try {
+      await loadTurnstileScript();
+    } catch (err) {
+      console.error('Turnstile 로드 실패:', err);
+      return;
+    }
 
     if (!containerRef.current || !window.turnstile) return;
 

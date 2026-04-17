@@ -1,5 +1,5 @@
 import { getApiUrl, API_RETRY_COUNT, API_RETRY_DELAY } from '../config';
-import type { AuthResponse, HealthResponse, LoginRequest, OAuthCallbackResponse, RegisterRequest, SaveData, User } from '../types';
+import type { AuthResponse, ChangelogData, HealthResponse, LoginRequest, OAuthCallbackResponse, RegisterRequest, SaveData, User } from '../types';
 
 /** 토큰 저장 키 */
 const TOKEN_STORAGE_KEY = 'auth_token';
@@ -159,6 +159,14 @@ export async function getPrivacyPolicy(): Promise<string> {
   const response = await fetch(`${baseUrl}/legal/privacy`);
   if (!response.ok) throw new Error('개인정보처리방침을 불러올 수 없습니다.');
   return response.text();
+}
+
+/** 서버 변경 이력(JSON) 가져오기 */
+export async function getServerChangelog(): Promise<ChangelogData> {
+  const baseUrl = getApiUrl();
+  const response = await fetch(`${baseUrl}/changelog`);
+  if (!response.ok) throw new Error('서버 변경 이력을 불러올 수 없습니다.');
+  return response.json();
 }
 
 /** X 로그인 인증 URL 가져오기 */
